@@ -1,37 +1,89 @@
 services:
   db:
-    image: postgres:15-alpine
-    restart: always
+    image: mysql:8.0
+    container_name: villageconnecte-db
+    restart: unless-stopped
+    command: --default-authentication-plugin=mysql_native_password
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: village
-    ports:
-      - "5432:5432"
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - db-data:/var/lib/postgresql/data
+      - mysql_data:/var/lib/mysql
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    networks:
+      - village-internal
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d village"]
-      interval: 5s
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
       timeout: 5s
       retries: 10
 
-  backend:
-    build: ./backend
-    restart: always
-    ports:
-      - "5000:5000"
-    environment:
-      DATABASE_URL: postgres://user:password@db:5432/village
-      PORT: 5000
-      JWT_SECRET: change-this-secret-in-production
-      JWT_EXPIRES_HOURS: 8
-      CORS_ORIGIN: http://localhost:3000,http://localhost:3001
-      DB_CONNECT_RETRIES: 30
-      DB_CONNECT_RETRY_DELAY_MS: 2500
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: villageconnecte-phpmyadmin
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    ports:
+      - "127.0.0.1:8081:80"
+    networks:
+      - village-internal
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: villageconnecte-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: ${PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_HOURS: ${JWT_EXPIRES_HOURS}
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      NODE_ENV: ${NODE_ENV}
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      ADMIN_PATH: /admin-frontend
+      PORTAIL_PATH: /portail-frontend
+    volumes:
+      - ./backend:/app
+      - ./admin/build:/admin-frontend:ro
+      - ./portail-captif/build:/portail-frontend:ro
+      - /app/node_modules
+    networks:
+      - village-internal
+      - traefik-network
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.villageconnecte.rule=Host(`villageconnecte.voisilab.online`)"
+      - "traefik.http.routers.villageconnecte.entrypoints=websecure"
+      - "traefik.http.routers.villageconnecte.tls.certresolver=letsencrypt"
+      - "traefik.http.services.villageconnecte.loadbalancer.server.port=3001"
+      - "traefik.http.routers.villageconnecte.middlewares=villageconnecte-headers"
+      - "traefik.http.middlewares.villageconnecte-headers.headers.stsSeconds=31536000"
+      - "traefik.http.middlewares.villageconnecte-headers.headers.stsIncludeSubdomains=true"
+      - "traefik.http.middlewares.villageconnecte-headers.headers.forceSTSHeader=true"
 
 volumes:
-  db-data:
+  mysql_data:
+
+networks:
+  village-internal:
+    driver: bridge
+  traefik-network:
+    external: true

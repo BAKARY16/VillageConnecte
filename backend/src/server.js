@@ -1,6 +1,7 @@
 'use strict';
 require('dotenv').config();
 
+const path         = require('path');
 const express      = require('express');
 const cors         = require('cors');
 const helmet       = require('helmet');
@@ -137,12 +138,20 @@ app.use('/api/public',       portalReadLimiter);
 app.use('/api/captive/metrics/ingest', metricsIngestLimiter);
 app.use('/api',              captiveRoutes);
 
-// ── 404 ────────────────────────────────────────────────
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    error:   `Route ${req.method} ${req.path} introuvable.`,
-  });
+// ── Frontends statiques ───────────────────────────────
+const ADMIN_PATH   = process.env.ADMIN_PATH   || path.join(__dirname, '../../admin/build');
+const PORTAIL_PATH = process.env.PORTAIL_PATH || path.join(__dirname, '../../portail-captif/build');
+
+// Admin dashboard sur /admin
+app.use('/admin', express.static(ADMIN_PATH));
+app.get('/admin/*', (req, res) => {
+  res.sendFile(path.join(ADMIN_PATH, 'index.html'));
+});
+
+// Portail captif sur / (catch-all, priorite basse)
+app.use(express.static(PORTAIL_PATH));
+app.get('*', (req, res) => {
+  res.sendFile(path.join(PORTAIL_PATH, 'index.html'));
 });
 
 // ── Error handler global ───────────────────────────────
