@@ -1,0 +1,18 @@
+{
+  "files": {
+    "main.css": "/static/css/main.6243214d.css",
+    "main.js": "/static/js/main.afa3f73f.js",
+    "static/media/logo.png": "/static/media/logo.f9e432d0a756462de537.png",
+    "static/media/mtn.png": "/static/media/mtn.183a3513b564ccd1c937.png",
+    "static/media/moov.png": "/static/media/moov.3ede1a56413483490df1.png",
+    "static/media/wave.png": "/static/media/wave.483f35dc4e8bdb2fc01c.png",
+    "static/media/orange.png": "/static/media/orange.3e9d4a169b59e633db91.png",
+    "index.html": "/index.html",
+    "main.6243214d.css.map": "/static/css/main.6243214d.css.map",
+    "main.afa3f73f.js.map": "/static/js/main.afa3f73f.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.6243214d.css",
+    "static/js/main.afa3f73f.js"
+  ]
+}
