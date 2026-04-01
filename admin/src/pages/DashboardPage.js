@@ -6,7 +6,6 @@ import { AlertCircle, AlertTriangle, Battery, CheckCircle2, Info, Signal, Users 
 import { CircleMarker, MapContainer, Popup, TileLayer } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useApp } from '../context/AppContext';
-import { TRAFIC_24H, TARIFS } from '../data/mockData';
 
 const fmt = (n) => n >= 1000000 ? `${(n / 1000000).toFixed(1)}M` : n >= 1000 ? `${(n / 1000).toFixed(0)}k` : n.toString();
 const fmtFCFA = (n) => `${fmt(n)} FCFA`;
@@ -16,8 +15,8 @@ const COLORS = ['var(--dashboard-chart-1)', 'var(--dashboard-chart-2)', 'var(--d
 export default function DashboardPage() {
   const { kpis, bornes, agents, alertes, vouchers, stats, tarifs } = useApp();
   const [period, setPeriod] = useState('24h');
-  const traficSource = stats?.trafic24h?.length ? stats.trafic24h : TRAFIC_24H;
-  const tarifsSource = tarifs?.length ? tarifs : TARIFS;
+  const traficSource = stats?.trafic24h || [];
+  const tarifsSource = tarifs || [];
 
   const voucherStats = {
     journalier: vouchers.filter(v => v.type === 'journalier').length,
@@ -47,6 +46,10 @@ export default function DashboardPage() {
     bg: 'var(--dashboard-kpi-bg)',
   };
 
+  const revenusDeltaPct = kpis.revenusHier > 0
+    ? Math.round(((kpis.revenusJour - kpis.revenusHier) / kpis.revenusHier) * 100)
+    : (kpis.revenusJour > 0 ? 100 : 0);
+
   return (
     <div>
       {/* KPI Grid */}
@@ -55,8 +58,8 @@ export default function DashboardPage() {
           icon={<UsersIcon />}
           value={kpis.usersConnectes}
           label="Utilisateurs connectés"
-          trend="+12%"
-          trendUp
+          trend={`${kpis.bornesActives}/${kpis.bornesTotal} bornes actives`}
+          trendUp={kpis.bornesActives > 0}
           color={kpiTone.color}
           bg={kpiTone.bg}
           subtitle="en ce moment"
@@ -65,7 +68,7 @@ export default function DashboardPage() {
           icon={<DollarIcon />}
           value={fmtFCFA(kpis.revenusJour)}
           label="Revenus aujourd'hui"
-          trend={`+${Math.round((kpis.revenusJour - kpis.revenusHier) / kpis.revenusHier * 100)}%`}
+          trend={`${revenusDeltaPct >= 0 ? '+' : ''}${revenusDeltaPct}%`}
           trendUp={kpis.revenusJour >= kpis.revenusHier}
           color={kpiTone.color}
           bg={kpiTone.bg}
@@ -75,8 +78,8 @@ export default function DashboardPage() {
           icon={<TicketIcon />}
           value={kpis.vouchersDuJour}
           label="Vouchers vendus"
-          trend="+8%"
-          trendUp
+          trend={`${kpis.vouchersSemaine} cette semaine`}
+          trendUp={kpis.vouchersDuJour > 0}
           color={kpiTone.color}
           bg={kpiTone.bg}
           subtitle="aujourd'hui"

@@ -1,5 +1,6 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
+const bcrypt = require('bcryptjs');
 
 const { query, queryOne } = require('../config/database');
 const { requireAuth } = require('../middleware/auth');
@@ -11,6 +12,29 @@ const {
 const router = express.Router();
 
 const AGENT_COLORS = ['#10B981', '#6366F1', '#F59E0B', '#EC4899', '#0EA5E9', '#8B5CF6'];
+
+const DEFAULT_NETWORK_SETTINGS = {
+  ssid: 'VillageConnecte',
+  channel: '6',
+  bandwidth: '20MHz',
+  maxUsers: 50,
+  captivePortalUrl: 'http://192.168.1.108/portal',
+  apiUrl: 'http://localhost:3001',
+  cinetpayKey: '',
+  cinetpaySiteId: '',
+  commissionAgentPct: 12,
+  partOperateurPct: 83,
+  partCommunautairePct: 5,
+};
+
+const DEFAULT_BRANDING_SETTINGS = {
+  nomProjet: 'Village Connecte Dioradougou',
+  nomOrganisation: 'FabLab UVCI',
+  couleurPrimaire: '#55104D',
+  couleurSecondaire: '#F29A07',
+  logoUrl: '',
+  slogan: 'Internet pour tous !',
+};
 
 function toNum(value, fallback = 0) {
   const parsed = Number(value);
@@ -90,6 +114,23 @@ function emailFromName(name, fallbackId) {
   return `${base || 'agent'}@villageconnecte.ci`;
 }
 
+function keyValueRowsToObject(rows = []) {
+  return rows.reduce((acc, row) => {
+    acc[row.nom] = row.valeur;
+    return acc;
+  }, {});
+}
+
+function averageMbpsFromSession(dataDownMb, dataUpMb, startedAt) {
+  if (!startedAt) return 0;
+  const startedTs = new Date(startedAt).getTime();
+  if (Number.isNaN(startedTs)) return 0;
+  const elapsedSec = Math.max(1, Math.floor((Date.now() - startedTs) / 1000));
+  const totalMb = Math.max(0, toNum(dataDownMb) + toNum(dataUpMb));
+  const avgMbps = (totalMb * 8) / elapsedSec;
+  return Number(avgMbps.toFixed(3));
+}
+
 function mapBorneRow(row) {
   return {
     id: row.id,
@@ -165,6 +206,8 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       sessionsRows,
       alertesRows,
       tarifsRows,
+      reseauRows,
+      brandingRows,
       sessionsCount,
       revenusJour,
       revenusHier,
@@ -181,6 +224,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       revenus30jRows,
       trafic24hRows,
       voucherCommandsRows,
+      uptimeRow,
     ] = await Promise.all([
       query('SELECT * FROM bornes ORDER BY id ASC'),
       query('SELECT * FROM v_agent_stats ORDER BY revenus_mois DESC'),
@@ -254,6 +298,8 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       `),
       query('SELECT * FROM alertes ORDER BY created_at DESC'),
       query('SELECT id, nom, slug, prix_fcfa, duree_heures, vitesse_mbps FROM tarifs WHERE actif=1 ORDER BY prix_fcfa ASC'),
+      query('SELECT nom, valeur FROM parametres_reseau'),
+      query('SELECT nom, valeur FROM parametres_branding'),
       queryOne("SELECT COUNT(*) AS value FROM sessions_actives WHERE statut='active' AND expires_at > NOW()"),
       queryOne("SELECT COALESCE(SUM(montant),0) AS value FROM transactions WHERE statut='succes' AND DATE(created_at)=CURDATE()"),
       queryOne("SELECT COALESCE(SUM(montant),0) AS value FROM transactions WHERE statut='succes' AND DATE(created_at)=DATE_SUB(CURDATE(), INTERVAL 1 DAY)"),
@@ -279,7 +325,9 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       query(`
         SELECT
           HOUR(started_at) AS heure,
-          COUNT(*) AS users
+          COUNT(*) AS users,
+          COALESCE(SUM(data_mb_down), 0) AS download_mb,
+          COALESCE(SUM(data_mb_up), 0) AS upload_mb
         FROM sessions_actives
         WHERE started_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
         GROUP BY HOUR(started_at)
@@ -302,6 +350,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
         ORDER BY MAX(v.created_at) DESC
         LIMIT 12
       `),
+      queryOne("SELECT ROUND(AVG(uptime_pct), 1) AS value FROM bornes WHERE statut IN ('online','warning')"),
     ]);
 
     const bornes = bornesRows.map(mapBorneRow);
@@ -393,9 +442,11 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       typePass: session.tarif_slug,
       heureConnexion: session.started_at,
       dureeRestante: Math.max(0, toNum(session.secondes_restantes)),
-      debitDown: Math.max(1, Math.round(toNum(session.data_mb_down) / 10) || 5),
-      debitUp: Math.max(1, Math.round(toNum(session.data_mb_up) / 10) || 1),
-      dataTotal: Math.round(toNum(session.data_mb_down)),
+      debitDown: averageMbpsFromSession(session.data_mb_down, session.data_mb_up, session.started_at),
+      debitUp: 0,
+      dataDown: Number(toNum(session.data_mb_down).toFixed(3)),
+      dataUp: Number(toNum(session.data_mb_up).toFixed(3)),
+      dataTotal: Number((toNum(session.data_mb_down) + toNum(session.data_mb_up)).toFixed(3)),
     }));
 
     const alertes = alertesRows.map(alert => ({
@@ -415,7 +466,36 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       duree: durationLabel(toNum(tarif.duree_heures)),
       prix: toNum(tarif.prix_fcfa),
       debit: `${toNum(tarif.vitesse_mbps, 5)} Mbps`,
+      vitesse_mbps: toNum(tarif.vitesse_mbps, 5),
     }));
+
+    const reseauMap = keyValueRowsToObject(reseauRows);
+    const brandingMap = keyValueRowsToObject(brandingRows);
+
+    const networkSettings = {
+      ...DEFAULT_NETWORK_SETTINGS,
+      ssid: reseauMap.ssid_wifi || DEFAULT_NETWORK_SETTINGS.ssid,
+      channel: reseauMap.channel_wifi || DEFAULT_NETWORK_SETTINGS.channel,
+      bandwidth: reseauMap.bandwidth_wifi || DEFAULT_NETWORK_SETTINGS.bandwidth,
+      maxUsers: toNum(reseauMap.max_users_per_borne, DEFAULT_NETWORK_SETTINGS.maxUsers),
+      captivePortalUrl: reseauMap.captive_portal_url || DEFAULT_NETWORK_SETTINGS.captivePortalUrl,
+      apiUrl: reseauMap.api_url || DEFAULT_NETWORK_SETTINGS.apiUrl,
+      cinetpayKey: reseauMap.cinetpay_key || DEFAULT_NETWORK_SETTINGS.cinetpayKey,
+      cinetpaySiteId: reseauMap.cinetpay_site_id || DEFAULT_NETWORK_SETTINGS.cinetpaySiteId,
+      commissionAgentPct: toNum(reseauMap.commission_agent_pct, 12),
+      partOperateurPct: toNum(reseauMap.part_operateur_pct, 83),
+      partCommunautairePct: toNum(reseauMap.part_communautaire_pct, 5),
+    };
+
+    const brandingSettings = {
+      ...DEFAULT_BRANDING_SETTINGS,
+      nomProjet: brandingMap.nom_plateforme || DEFAULT_BRANDING_SETTINGS.nomProjet,
+      nomOrganisation: brandingMap.nom_organisation || DEFAULT_BRANDING_SETTINGS.nomOrganisation,
+      couleurPrimaire: brandingMap.couleur_primaire || DEFAULT_BRANDING_SETTINGS.couleurPrimaire,
+      couleurSecondaire: brandingMap.couleur_secondaire || DEFAULT_BRANDING_SETTINGS.couleurSecondaire,
+      logoUrl: brandingMap.logo_url || DEFAULT_BRANDING_SETTINGS.logoUrl,
+      slogan: brandingMap.slogan || DEFAULT_BRANDING_SETTINGS.slogan,
+    };
 
     const stats = {
       revenus30j: revenus30jRows.map(row => ({
@@ -425,6 +505,8 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       trafic24h: trafic24hRows.map(row => ({
         heure: `${String(row.heure).padStart(2, '0')}h`,
         users: toNum(row.users),
+        download: Number(toNum(row.download_mb).toFixed(1)),
+        upload: Number(toNum(row.upload_mb).toFixed(1)),
       })),
     };
 
@@ -453,7 +535,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       bornesTotal: toNum(bornesTotal?.value),
       bornesOffline: toNum(bornesOffline?.value),
       alertesActives: toNum(alertesActives?.value),
-      uptimeGlobal: 97.8,
+      uptimeGlobal: toNum(uptimeRow?.value),
     };
 
     return res.json({
@@ -467,11 +549,115 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       voucherCommands,
       tarifs,
       stats,
+      networkSettings,
+      brandingSettings,
     });
   } catch (error) {
     return res.status(500).json({
       error: error.message || 'Bootstrap impossible',
     });
+  }
+});
+
+router.put('/profile', requireAuth, async (req, res) => {
+  try {
+    const { nom, prenom, email } = req.body || {};
+    if (!nom || !prenom || !email) {
+      return res.status(400).json({ error: 'Nom, prenom et email sont requis' });
+    }
+
+    const existing = await queryOne('SELECT id FROM admins WHERE email=? AND id<>?', [email, req.admin.id]);
+    if (existing) return res.status(409).json({ error: 'Cet email est deja utilise' });
+
+    await query(
+      'UPDATE admins SET nom=?, prenom=?, email=?, updated_at=NOW() WHERE id=?',
+      [nom, prenom, email, req.admin.id],
+    );
+
+    const admin = await queryOne('SELECT id, nom, prenom, email, role FROM admins WHERE id=?', [req.admin.id]);
+    return res.json({ success: true, user: admin });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Mise a jour profil impossible' });
+  }
+});
+
+router.put('/profile/password', requireAuth, async (req, res) => {
+  try {
+    const { current_password, new_password } = req.body || {};
+    if (!current_password || !new_password || String(new_password).length < 8) {
+      return res.status(400).json({ error: 'Mot de passe actuel requis et nouveau mot de passe >= 8 caracteres' });
+    }
+
+    const admin = await queryOne('SELECT password_hash FROM admins WHERE id=?', [req.admin.id]);
+    if (!admin) return res.status(404).json({ error: 'Admin introuvable' });
+
+    const match = await bcrypt.compare(current_password, admin.password_hash);
+    if (!match) return res.status(400).json({ error: 'Mot de passe actuel incorrect' });
+
+    const newHash = await bcrypt.hash(new_password, 12);
+    await query('UPDATE admins SET password_hash=?, updated_at=NOW() WHERE id=?', [newHash, req.admin.id]);
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Changement mot de passe impossible' });
+  }
+});
+
+router.put('/settings/network', requireAuth, async (req, res) => {
+  try {
+    const payload = {
+      ssid_wifi: req.body?.ssid,
+      channel_wifi: req.body?.channel,
+      bandwidth_wifi: req.body?.bandwidth,
+      max_users_per_borne: req.body?.maxUsers,
+      captive_portal_url: req.body?.captivePortalUrl,
+      api_url: req.body?.apiUrl,
+      cinetpay_key: req.body?.cinetpayKey,
+      cinetpay_site_id: req.body?.cinetpaySiteId,
+      commission_agent_pct: req.body?.commissionAgentPct,
+      part_operateur_pct: req.body?.partOperateurPct,
+      part_communautaire_pct: req.body?.partCommunautairePct,
+    };
+
+    for (const [nom, valeur] of Object.entries(payload)) {
+      if (valeur === undefined) continue;
+      await query(
+        `INSERT INTO parametres_reseau (nom, valeur)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE valeur=VALUES(valeur), updated_at=NOW()`,
+        [nom, String(valeur)],
+      );
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Sauvegarde reseau impossible' });
+  }
+});
+
+router.put('/settings/branding', requireAuth, async (req, res) => {
+  try {
+    const payload = {
+      nom_plateforme: req.body?.nomProjet,
+      nom_organisation: req.body?.nomOrganisation,
+      couleur_primaire: req.body?.couleurPrimaire,
+      couleur_secondaire: req.body?.couleurSecondaire,
+      logo_url: req.body?.logoUrl,
+      slogan: req.body?.slogan,
+    };
+
+    for (const [nom, valeur] of Object.entries(payload)) {
+      if (valeur === undefined) continue;
+      await query(
+        `INSERT INTO parametres_branding (nom, valeur)
+         VALUES (?, ?)
+         ON DUPLICATE KEY UPDATE valeur=VALUES(valeur), updated_at=NOW()`,
+        [nom, String(valeur)],
+      );
+    }
+
+    return res.json({ success: true });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Sauvegarde branding impossible' });
   }
 });
 

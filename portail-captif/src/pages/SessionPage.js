@@ -29,14 +29,15 @@ function formatMb(value) {
   return n.toFixed(3);
 }
 
-const SESSION_STATUS_REFRESH_MS = Math.min(
+const SESSION_STATUS_REFRESH_MS = Math.max(
   5000,
-  Math.max(1000, Number(process.env.REACT_APP_SESSION_STATUS_REFRESH_MS || 5000)),
+  Number(process.env.REACT_APP_SESSION_STATUS_REFRESH_MS || 10000),
 );
 
 export default function SessionPage({ session }) {
   const { disconnect, addToast, getSessionStatus, portalMeta } = usePortal();
   const autoDisconnectedRef = useRef(false);
+  const transientErrorsRef = useRef(0);
 
   const baseTotalSeconds = Math.max(1, (session?.duree || 0) * 3600);
   const [liveSession, setLiveSession] = useState(session);
@@ -56,14 +57,33 @@ export default function SessionPage({ session }) {
     let cancelled = false;
 
     const refreshStatus = async () => {
+      if (typeof navigator !== 'undefined' && !navigator.onLine) return;
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+
       const result = await getSessionStatus(session.id);
       if (cancelled || autoDisconnectedRef.current) return;
 
+      const isTerminalStatusCode = [404, 410].includes(Number(result?.status));
+      const hasExplicitSessionEnd =
+        result?.ok === true
+        && (
+          result?.active === false
+          || !result?.session
+          || (result?.statut && result.statut !== 'active')
+        );
+
+      if (!result?.ok && !isTerminalStatusCode) {
+        transientErrorsRef.current += 1;
+        if (transientErrorsRef.current === 1) {
+          addToast('Instabilite reseau detectee. Session conservee, nouvelle verification en cours...', 'warning');
+        }
+        return;
+      }
+
+      transientErrorsRef.current = 0;
+
       const shouldForceDisconnect =
-        !result?.ok ||
-        !result?.session ||
-        result?.active === false ||
-        (result?.statut && result.statut !== 'active');
+        isTerminalStatusCode || hasExplicitSessionEnd;
 
       if (shouldForceDisconnect) {
         autoDisconnectedRef.current = true;
@@ -174,7 +194,7 @@ export default function SessionPage({ session }) {
       </div>
 
       {/* Speed meters */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+      {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
         {[
           { label: '↓ Débit reçu', value: formatMbps(speed.down), unit: 'Mbps', color: 'var(--text-primary)' },
           { label: '↑ Débit envoyé', value: formatMbps(speed.up), unit: 'Mbps', color: 'var(--text-primary)' },
@@ -187,16 +207,16 @@ export default function SessionPage({ session }) {
             <div style={{ fontSize: '0.63rem', color: '#000', marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
-      </div>
+      </div> */}
 
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.65)', border: '1px solid var(--border-subtle)' }}>
+      {/* <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, padding: '8px 10px', borderRadius: 10, background: 'rgba(255,255,255,0.65)', border: '1px solid var(--border-subtle)' }}>
         <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
           Total consommé: <strong>{formatMb(dataUsed)} MB</strong>
         </div>
         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
           {lastMetricsAt ? 'Mesures en direct actives' : 'En attente des mesures'}
         </div>
-      </div>
+      </div> */}
 
       {/* Session details */}
       {/* <div className="session-info" style={{ marginBottom: 16 }}>
@@ -245,7 +265,7 @@ export default function SessionPage({ session }) {
           padding: '11px',
           borderRadius: 'var(--radius-md)',
           border: '1.5px solid rgba(239,68,68,0.25)',
-          background: 'rgba(239,68,68,0.06)',
+          background: '#55104d',
           color: 'var(--brand-danger)',
           fontSize: '0.82rem',
           fontWeight: 600,
@@ -257,8 +277,8 @@ export default function SessionPage({ session }) {
           fontFamily: 'inherit',
           transition: 'all 0.15s',
         }}
-        onMouseEnter={e => { e.target.style.background = 'rgba(239,68,68,0.12)'; }}
-        onMouseLeave={e => { e.target.style.background = 'rgba(239,68,68,0.06)'; }}
+        onMouseEnter={e => { e.target.style.background = 'rgba(143, 8, 161, 0.72)'; }}
+        onMouseLeave={e => { e.target.style.background = '#55104d)'; }}
       >
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Se déconnecter

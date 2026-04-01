@@ -7,7 +7,7 @@ import { HandCoins } from 'lucide-react';
 
 const PortalContext = createContext(null);
 const API_BASE = (process.env.REACT_APP_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
-const PORTAL_BACKGROUND_REFRESH_MS = Number(process.env.REACT_APP_PORTAL_REFRESH_MS || 5000);
+const PORTAL_BACKGROUND_REFRESH_MS = Number(process.env.REACT_APP_PORTAL_REFRESH_MS || 30000);
 
 function normalizeMac(value) {
   const cleaned = String(value || '').trim().replace(/-/g, ':').toUpperCase();

@@ -2,12 +2,14 @@ import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell } from 'recharts';
 import { HandCoins } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { REVENUS_30J } from '../data/mockData';
 
 const COLORS_PIE = ['var(--text-primary)', 'var(--text-secondary)', 'var(--text-muted)', 'rgba(255,255,255,0.3)', 'rgba(255,255,255,0.15)'];
 
 export default function TransactionsPage() {
-  const { transactions, agents, stats: apiStats } = useApp();
+  const { transactions, agents, stats: apiStats, networkSettings } = useApp();
+  const commissionPct = networkSettings?.commissionAgentPct ?? 12;
+  const partOperateurPct = networkSettings?.partOperateurPct ?? 83;
+  const partCommunautairePct = networkSettings?.partCommunautairePct ?? 5;
   const [search, setSearch] = useState('');
   const [filterMethode, setFilterMethode] = useState('all');
   const [filterStatut, setFilterStatut] = useState('all');
@@ -40,23 +42,35 @@ export default function TransactionsPage() {
     total: transactions.filter(t => t.methode === m && t.statut === 'succès').reduce((s, t) => s + t.montant, 0),
   }));
 
-  const agentRevStats = agents.map(a => ({
-    name: a.nom.split(' ')[0],
-    revenus: a.revenusCeMois,
-    commission: Math.round(a.revenusCeMois * 0.12),
-  })).sort((a, b) => b.revenus - a.revenus);
+  const agentRevStats = agents.map(a => {
+    const pct = (a.commission ?? commissionPct) / 100;
+    return {
+      name: a.nom.split(' ')[0],
+      revenus: a.revenusCeMois,
+      commissionPct: a.commission ?? commissionPct,
+      commission: Math.round(a.revenusCeMois * pct),
+    };
+  }).sort((a, b) => b.revenus - a.revenus);
 
-  const borneStats = ['B01', 'B04', 'B06', 'B08', 'B09'].map(id => ({
-    id,
-    revenus: Math.floor(30000 + Math.random() * 80000),
+  const borneStats = useMemo(() => {
+    const byBorne = new Map();
+    for (const tx of transactions) {
+      if (tx.statut !== 'succès') continue;
+      const borneId = tx.borneId || '-';
+      const current = byBorne.get(borneId) || 0;
+      byBorne.set(borneId, current + Number(tx.montant || 0));
+    }
+
+    return Array.from(byBorne.entries())
+      .map(([id, revenus]) => ({ id, revenus }))
+      .sort((a, b) => b.revenus - a.revenus)
+      .slice(0, 12);
+  }, [transactions]);
+
+  const revenus30 = (apiStats?.revenus30j || []).map(item => ({
+    date: new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
+    total: item.total,
   }));
-
-  const revenus30 = apiStats?.revenus30j?.length
-    ? apiStats.revenus30j.map(item => ({
-        date: new Date(item.date).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }),
-        total: item.total,
-      }))
-    : REVENUS_30J;
 
   return (
     <div>
@@ -224,21 +238,21 @@ export default function TransactionsPage() {
                 <YAxis tick={{ fill: 'var(--text-muted)', fontSize: 10 }} tickLine={false} axisLine={false} tickFormatter={v => `${v/1000}k`} />
                 <Tooltip contentStyle={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 8, fontSize: 12 }} formatter={v => [`${v.toLocaleString()} FCFA`]} />
                 <Bar dataKey="revenus" name="Revenus" fill="var(--text-primary)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="commission" name="Commission (12%)" fill="var(--text-secondary)" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="commission" name={`Commission (${commissionPct}%)`} fill="var(--text-secondary)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
           <div className="table-container" style={{ border: 'none' }}>
             <table className="table">
-              <thead><tr><th>Agent</th><th>Revenus</th><th>Commission (12%)</th><th>Part opérateur (83%)</th><th>Caisse communautaire (5%)</th></tr></thead>
+              <thead><tr><th>Agent</th><th>Revenus</th><th>Commission ({commissionPct}%)</th><th>Part opérateur ({partOperateurPct}%)</th><th>Caisse communautaire ({partCommunautairePct}%)</th></tr></thead>
               <tbody>
                 {agentRevStats.map((a, i) => (
                   <tr key={i}>
                     <td style={{ fontWeight: 600 }}>{a.name}</td>
                     <td style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{a.revenus.toLocaleString()} FCFA</td>
                     <td style={{ color: 'var(--text-secondary)' }}>{a.commission.toLocaleString()} FCFA</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{Math.round(a.revenus * 0.83).toLocaleString()} FCFA</td>
-                    <td style={{ color: 'var(--text-secondary)' }}>{Math.round(a.revenus * 0.05).toLocaleString()} FCFA</td>
+                    <td style={{ color: 'var(--text-muted)' }}>{Math.round(a.revenus * partOperateurPct / 100).toLocaleString()} FCFA</td>
+                    <td style={{ color: 'var(--text-secondary)' }}>{Math.round(a.revenus * partCommunautairePct / 100).toLocaleString()} FCFA</td>
                   </tr>
                 ))}
               </tbody>

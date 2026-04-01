@@ -10,8 +10,6 @@ const rateLimit    = require('express-rate-limit');
 const { testConnection }   = require('./config/database');
 const authRoutes           = require('./routes/auth');
 const voucherRoutes        = require('./routes/vouchers');
-const adminRoutes          = require('./routes/admin');
-const captiveRoutes        = require('./routes/captive');
 const {
   dashboardRouter,
   bornesRouter,
@@ -24,15 +22,6 @@ const {
 
 const app  = express();
 const PORT = parseInt(process.env.PORT || '3001');
-
-function isHighFrequencyReadPath(path = '') {
-  return (
-    path === '/health' ||
-    path.startsWith('/api/public/') ||
-    path.startsWith('/api/captive/metrics/ingest') ||
-    /^\/api\/(captive\/)?sessions\/[^/]+\/status$/i.test(path)
-  );
-}
 
 // ── Sécurité ───────────────────────────────────────────
 app.use(helmet({
@@ -61,10 +50,9 @@ app.use(cors({
 // ── Rate Limiting ──────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000'), // 15 min
-  max:      parseInt(process.env.RATE_LIMIT_MAX       || '1200'),
+  max:      parseInt(process.env.RATE_LIMIT_MAX       || '200'),
   standardHeaders: true,
   legacyHeaders:   false,
-  skip: (req) => req.method === 'OPTIONS' || isHighFrequencyReadPath(req.path),
   message: { success: false, error: 'Trop de requêtes. Réessayez dans 15 minutes.' },
 });
 
@@ -78,22 +66,6 @@ const voucherLimiter = rateLimit({
   windowMs: 60000, // 1 min
   max: 30,
   message: { success: false, error: 'Trop de validations. Attendez 1 minute.' },
-});
-
-const portalReadLimiter = rateLimit({
-  windowMs: 60000, // 1 min
-  max: parseInt(process.env.PORTAL_READ_RATE_LIMIT_MAX || '600'),
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Trop de requêtes portail. Réessayez dans 1 minute.' },
-});
-
-const metricsIngestLimiter = rateLimit({
-  windowMs: 60000, // 1 min
-  max: parseInt(process.env.METRICS_INGEST_RATE_LIMIT_MAX || '1800'),
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { success: false, error: 'Trop d envois de métriques. Réessayez dans 1 minute.' },
 });
 
 app.use(globalLimiter);
@@ -123,8 +95,6 @@ app.get('/health', async (req, res) => {
 
 // ── Routes API ─────────────────────────────────────────
 app.use('/api/auth',         authLimiter, authRoutes);
-app.use('/api/admin/auth',   authLimiter, authRoutes);
-app.use('/api/admin',        adminRoutes);
 app.use('/api/vouchers',     voucherLimiter, voucherRoutes);
 app.use('/api/dashboard',    dashboardRouter);
 app.use('/api/bornes',       bornesRouter);
@@ -133,9 +103,6 @@ app.use('/api/sessions',     sessionsRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/alertes',      alertesRouter);
 app.use('/api/tarifs',       tarifsRouter);
-app.use('/api/public',       portalReadLimiter);
-app.use('/api/captive/metrics/ingest', metricsIngestLimiter);
-app.use('/api',              captiveRoutes);
 
 // ── 404 ────────────────────────────────────────────────
 app.use((req, res) => {

@@ -4,7 +4,7 @@
  * Run: node scripts/seed.js
  */
 
-require('dotenv').config({ path: '.env' });
+require('dotenv').config({ path: '.env.example' });
 const mysql  = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
@@ -49,27 +49,6 @@ async function seed() {
   try {
     conn = await mysql.createConnection(dbConfig);
     console.log('✅ Connected to MySQL');
-
-    // S'assurer que les tables de paramètres existent, même sur un volume MySQL déjà initialisé
-    await conn.execute(`
-      CREATE TABLE IF NOT EXISTS parametres_reseau (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        nom VARCHAR(100) NOT NULL UNIQUE,
-        valeur TEXT NOT NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
-
-    await conn.execute(`
-      CREATE TABLE IF NOT EXISTS parametres_branding (
-        id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        nom VARCHAR(100) NOT NULL UNIQUE,
-        valeur TEXT NOT NULL,
-        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    `);
 
     // ── 1. Admin ─────────────────────────────────────
     console.log('  → Seeding admins...');
@@ -257,46 +236,7 @@ async function seed() {
       `, [startedAt, expiresAt, macAddrs[i], `10.0.0.${40+i}`, borneIds[i], voucherActifs[i].id]);
     }
 
-
-    // ── 8. Paramètres réseau ─────────────────────────
-    console.log('  → Seeding paramètres réseau...');
-    const reseauParams = [
-      ['ssid_wifi', 'VillageConnecte'],
-      ['mot_de_passe_wifi', 'village2026'],
-      ['ip_gateway', '192.168.1.1'],
-      ['dns_primaire', '8.8.8.8'],
-      ['dns_secondaire', '1.1.1.1'],
-      // Répartition financière par défaut (%)
-      ['commission_agent_pct',    '12'],
-      ['part_operateur_pct',      '83'],
-      ['part_communautaire_pct',  '5'],
-    ];
-    for (const [nom, valeur] of reseauParams) {
-      await conn.execute(`
-        INSERT INTO parametres_reseau (nom, valeur)
-        VALUES (?, ?)
-        ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)
-      `, [nom, valeur]);
-    }
-
-    // ── 9. Paramètres branding ───────────────────────
-    console.log('  → Seeding paramètres branding...');
-    const brandingParams = [
-      ['nom_plateforme', 'Village Connecté'],
-      ['logo_url', 'https://village-connecte.ci/logo.png'],
-      ['couleur_primaire', '#1A73E8'],
-      ['couleur_secondaire', '#F9A825'],
-      ['slogan', 'Internet pour tous !'],
-    ];
-    for (const [nom, valeur] of brandingParams) {
-      await conn.execute(`
-        INSERT INTO parametres_branding (nom, valeur)
-        VALUES (?, ?)
-        ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)
-      `, [nom, valeur]);
-    }
-
-    // ── 10. Alertes ──────────────────────────────────
+    // ── 8. Alertes ────────────────────────────────────
     console.log('  → Seeding alertes...');
     await conn.execute(`
       INSERT IGNORE INTO alertes (type_alerte,titre,message,borne_id,resolue,created_at) VALUES

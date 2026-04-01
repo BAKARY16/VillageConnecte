@@ -1,30 +1,43 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Activity, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function MonitoringPage() {
-  const { bornes, kpis } = useApp();
-  const [traficData, setTraficData] = useState(generateTrafic(20));
+  const { bornes, kpis, stats } = useApp();
   const [tick, setTick] = useState(0);
 
+  // Initialise depuis les données API (trafic24h) et complète avec l'heure courante
+  const buildLivePoints = (trafic24h = []) => {
+    if (!trafic24h.length) return [];
+    return trafic24h.map(p => ({
+      time: p.heure,
+      timeShort: p.heure,
+      download: p.download || 0,
+      upload: p.upload || 0,
+      users: p.users,
+    }));
+  };
+
+  const [traficData, setTraficData] = useState(() => buildLivePoints(stats?.trafic24h));
+  const prevTrafic24hRef = useRef(stats?.trafic24h);
+
+  // Synchronise quand bootstrap rafraîchit les données API
+  useEffect(() => {
+    const incoming = stats?.trafic24h;
+    if (incoming && incoming !== prevTrafic24hRef.current) {
+      prevTrafic24hRef.current = incoming;
+      setTraficData(buildLivePoints(incoming));
+    }
+  }, [stats?.trafic24h]);
+
+  // Tick toutes les 3s pour l'affichage "live" (heure courante) sans modifier les valeurs
   useEffect(() => {
     const interval = setInterval(() => {
-      setTraficData(prev => {
-        const now = new Date();
-        const label = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}`;
-        const newPoint = {
-          time: label,
-          download: Math.floor(10 + Math.random() * 60),
-          upload: Math.floor(3 + Math.random() * 20),
-          users: kpis.usersConnectes + Math.floor((Math.random() - 0.5) * 10),
-        };
-        return [...prev.slice(-29), newPoint];
-      });
       setTick(t => t + 1);
     }, 3000);
     return () => clearInterval(interval);
-  }, [kpis.usersConnectes]);
+  }, []);
 
   const onlineBornes = bornes.filter(b => b.status === 'online');
   const offlineBornes = bornes.filter(b => b.status === 'offline');
@@ -32,10 +45,7 @@ export default function MonitoringPage() {
   const totalUsers = bornes.reduce((s, b) => s + b.users, 0);
   const avgSignal = Math.round(onlineBornes.reduce((s, b) => s + b.signal, 0) / (onlineBornes.length || 1));
   const avgBatterie = Math.round(bornes.reduce((s, b) => s + b.batterie, 0) / bornes.length);
-  const recentTrafic = traficData.slice(-12).map(point => ({
-    ...point,
-    timeShort: point.time.slice(3), // mm:ss for better readability
-  }));
+  const recentTrafic = traficData.slice(-12);
   const latestPoint = recentTrafic[recentTrafic.length - 1] || { download: 0, upload: 0, users: 0 };
   const avgDownload = Math.round(recentTrafic.reduce((sum, p) => sum + p.download, 0) / (recentTrafic.length || 1));
   const avgUpload = Math.round(recentTrafic.reduce((sum, p) => sum + p.upload, 0) / (recentTrafic.length || 1));
@@ -149,7 +159,7 @@ export default function MonitoringPage() {
       {/* Borne status grid */}
       <div className="card">
         <div className="card-header">
-          <span className="card-title">État en temps réel — 13 bornes</span>
+          <span className="card-title">État en temps réel — {bornes.length} bornes</span>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Mise à jour: il y a {tick % 10 * 3}s</span>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
@@ -206,14 +216,3 @@ function MiniMetric({ label, value, color }) {
   );
 }
 
-function generateTrafic(n) {
-  return Array.from({ length: n }, (_, i) => {
-    const d = new Date(Date.now() - (n - i) * 3000);
-    return {
-      time: `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`,
-      download: Math.floor(10 + Math.random() * 60),
-      upload: Math.floor(3 + Math.random() * 20),
-      users: Math.floor(80 + Math.random() * 60),
-    };
-  });
-}

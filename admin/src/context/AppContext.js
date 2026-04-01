@@ -2,7 +2,9 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 const AppContext = createContext(null);
 const API_BASE = (process.env.REACT_APP_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
-const ADMIN_BACKGROUND_REFRESH_MS = Number(process.env.REACT_APP_BACKGROUND_REFRESH_MS || 5000);
+const ADMIN_VISIBLE_REFRESH_MS = Number(process.env.REACT_APP_VISIBLE_REFRESH_MS || 5000);
+const ADMIN_HIDDEN_REFRESH_MS = Number(process.env.REACT_APP_HIDDEN_REFRESH_MS || 45000);
+const ADMIN_ERROR_BACKOFF_MAX_MS = Number(process.env.REACT_APP_ERROR_BACKOFF_MAX_MS || 120000);
 
 const DEFAULT_KPIS = {
   usersConnectes: 0,
@@ -24,6 +26,29 @@ const DEFAULT_KPIS = {
 const DEFAULT_STATS = {
   trafic24h: [],
   revenus30j: [],
+};
+
+const DEFAULT_NETWORK_SETTINGS = {
+  ssid: 'VillageConnecte',
+  channel: '6',
+  bandwidth: '20MHz',
+  maxUsers: 50,
+  captivePortalUrl: 'http://192.168.1.108/portal',
+  apiUrl: 'http://localhost:3001',
+  cinetpayKey: '',
+  cinetpaySiteId: '',
+  commissionAgentPct: 12,
+  partOperateurPct: 83,
+  partCommunautairePct: 5,
+};
+
+const DEFAULT_BRANDING_SETTINGS = {
+  nomProjet: 'Village Connecte Dioradougou',
+  nomOrganisation: 'FabLab UVCI',
+  couleurPrimaire: '#55104D',
+  couleurSecondaire: '#F29A07',
+  logoUrl: '',
+  slogan: 'Internet pour tous !',
 };
 
 async function apiRequest(path, { method = 'GET', token, body } = {}) {
@@ -61,6 +86,8 @@ export function AppProvider({ children }) {
   const [voucherCommands, setVoucherCommands] = useState([]);
   const [tarifs, setTarifs] = useState([]);
   const [stats, setStats] = useState(DEFAULT_STATS);
+  const [networkSettings, setNetworkSettings] = useState(DEFAULT_NETWORK_SETTINGS);
+  const [brandingSettings, setBrandingSettings] = useState(DEFAULT_BRANDING_SETTINGS);
   const [isBootstrapping, setIsBootstrapping] = useState(false);
 
   useEffect(() => {
@@ -93,6 +120,8 @@ export function AppProvider({ children }) {
     setVoucherCommands([]);
     setTarifs([]);
     setStats(DEFAULT_STATS);
+    setNetworkSettings(DEFAULT_NETWORK_SETTINGS);
+    setBrandingSettings(DEFAULT_BRANDING_SETTINGS);
     localStorage.removeItem('vc_user');
     localStorage.removeItem('vc_jwt');
   }, []);
@@ -113,6 +142,8 @@ export function AppProvider({ children }) {
         setVoucherCommands(data.voucherCommands || []);
         setTarifs(data.tarifs || []);
         setStats({ ...DEFAULT_STATS, ...(data.stats || {}) });
+        setNetworkSettings({ ...DEFAULT_NETWORK_SETTINGS, ...(data.networkSettings || {}) });
+        setBrandingSettings({ ...DEFAULT_BRANDING_SETTINGS, ...(data.brandingSettings || {}) });
       } catch (error) {
         if (notifyError) {
           addToast(error.message || 'Impossible de charger les donnees', 'error');
@@ -152,16 +183,47 @@ export function AppProvider({ children }) {
   );
 
   const updateProfile = useCallback(
-    (updates) => {
-      setUser((prev) => {
-        if (!prev) return prev;
-        const next = { ...prev, ...updates };
-        localStorage.setItem('vc_user', JSON.stringify(next));
-        return next;
-      });
-      addToast('Profil administrateur mis a jour', 'success');
+    async (updates) => {
+      if (!token) return false;
+      try {
+        const data = await apiRequest('/admin/profile', {
+          method: 'PUT',
+          token,
+          body: updates,
+        });
+        const nextUser = data.user || { ...user, ...updates };
+        setUser(nextUser);
+        localStorage.setItem('vc_user', JSON.stringify(nextUser));
+        addToast('Profil administrateur mis a jour', 'success');
+        return true;
+      } catch (error) {
+        addToast(error.message || 'Mise a jour profil impossible', 'error');
+        return false;
+      }
     },
-    [addToast],
+    [token, user, addToast],
+  );
+
+  const changePassword = useCallback(
+    async (currentPassword, newPassword) => {
+      if (!token) return false;
+      try {
+        await apiRequest('/admin/profile/password', {
+          method: 'PUT',
+          token,
+          body: {
+            current_password: currentPassword,
+            new_password: newPassword,
+          },
+        });
+        addToast('Mot de passe mis a jour', 'success');
+        return true;
+      } catch (error) {
+        addToast(error.message || 'Mise a jour mot de passe impossible', 'error');
+        return false;
+      }
+    },
+    [token, addToast],
   );
 
   useEffect(() => {
@@ -182,54 +244,89 @@ export function AppProvider({ children }) {
   useEffect(() => {
     if (!token) return undefined;
 
+    let timeoutId = null;
     let isRefreshing = false;
+    let destroyed = false;
+    let consecutiveErrors = 0;
+
+    const getNextDelay = (forceVisible = false) => {
+      const visible = forceVisible || document.visibilityState === 'visible';
+      const baseDelay = visible
+        ? Math.max(2000, ADMIN_VISIBLE_REFRESH_MS)
+        : Math.max(10000, ADMIN_HIDDEN_REFRESH_MS);
+
+      if (consecutiveErrors <= 0) return baseDelay;
+      return Math.min(
+        ADMIN_ERROR_BACKOFF_MAX_MS,
+        baseDelay * Math.pow(2, Math.min(consecutiveErrors, 4)),
+      );
+    };
+
+    const scheduleNext = (forceVisible = false) => {
+      if (destroyed) return;
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(runSilentRefresh, getNextDelay(forceVisible));
+    };
+
     const runSilentRefresh = async () => {
-      if (isRefreshing || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+      if (destroyed) return;
+      if (isRefreshing || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+        scheduleNext();
+        return;
+      }
+
+      if (document.visibilityState !== 'visible') {
+        scheduleNext();
+        return;
+      }
+
       isRefreshing = true;
       try {
         await refreshData(token, { notifyError: false, silent: true });
+        consecutiveErrors = 0;
+      } catch (error) {
+        consecutiveErrors += 1;
       } finally {
         isRefreshing = false;
+        scheduleNext();
       }
     };
 
-    const interval = setInterval(() => {
-      runSilentRefresh();
-    }, Math.max(2000, ADMIN_BACKGROUND_REFRESH_MS));
-
     const onVisible = () => {
-      if (document.visibilityState === 'visible') runSilentRefresh();
+      if (document.visibilityState === 'visible') {
+        consecutiveErrors = 0;
+        runSilentRefresh();
+      } else {
+        scheduleNext();
+      }
     };
 
+    scheduleNext();
     window.addEventListener('focus', runSilentRefresh);
     document.addEventListener('visibilitychange', onVisible);
 
     return () => {
-      clearInterval(interval);
+      destroyed = true;
+      clearTimeout(timeoutId);
       window.removeEventListener('focus', runSilentRefresh);
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [token, refreshData]);
 
+  // Synchronise les notifications avec les alertes non résolues issues de l'API
   useEffect(() => {
-    if (!user) return;
-    const interval = setInterval(() => {
-      const actifs = agents.filter((agent) => agent.status === 'actif');
-      const randomAgent = actifs[Math.floor(Math.random() * actifs.length)];
-      if (!randomAgent || Math.random() <= 0.7) return;
-
-      const notif = {
-        id: Date.now(),
-        type: 'sale',
-        message: `Vente: ${randomAgent.nom} - 1 voucher`,
-        time: new Date(),
+    if (!user || !alertes.length) return;
+    const unresolved = alertes.filter((a) => !a.resolue);
+    setNotifications(
+      unresolved.slice(0, 20).map((a) => ({
+        id: a.id,
+        type: a.type === 'critical' ? 'error' : a.type === 'warning' ? 'warning' : 'info',
+        message: `${a.titre}${a.borneId ? ` — ${a.borneId}` : ''}`,
+        time: new Date(a.date),
         read: false,
-      };
-      setNotifications((prev) => [notif, ...prev.slice(0, 19)]);
-    }, 12000);
-
-    return () => clearInterval(interval);
-  }, [user, agents]);
+      })),
+    );
+  }, [user, alertes]);
 
   const callAndRefresh = useCallback(
     async (path, options, successMessage, successType = 'success') => {
@@ -349,6 +446,74 @@ export function AppProvider({ children }) {
     setNotifications((prev) => prev.map((notification) => ({ ...notification, read: true })));
   }, []);
 
+  const saveTarifs = useCallback(
+    async (nextTarifs) => {
+      if (!token || !Array.isArray(nextTarifs)) return false;
+      try {
+        await Promise.all(
+          nextTarifs.map((tarif) => {
+            const vitesse = Number(String(tarif.debit || '').replace(/[^\d.]/g, '')) || Number(tarif.vitesse_mbps) || 5;
+            return apiRequest(`/tarifs/${tarif.id}`, {
+              method: 'PUT',
+              token,
+              body: {
+                prix_fcfa: Number(tarif.prix),
+                vitesse_mbps: vitesse,
+              },
+            });
+          }),
+        );
+        await refreshData(token, { notifyError: false });
+        addToast('Tarifs sauvegardes', 'success');
+        return true;
+      } catch (error) {
+        addToast(error.message || 'Sauvegarde tarifs impossible', 'error');
+        return false;
+      }
+    },
+    [token, refreshData, addToast],
+  );
+
+  const saveNetworkSettings = useCallback(
+    async (nextNetworkSettings) => {
+      if (!token) return false;
+      try {
+        await apiRequest('/admin/settings/network', {
+          method: 'PUT',
+          token,
+          body: nextNetworkSettings,
+        });
+        setNetworkSettings((prev) => ({ ...prev, ...nextNetworkSettings }));
+        addToast('Configuration reseau sauvegardee', 'success');
+        return true;
+      } catch (error) {
+        addToast(error.message || 'Sauvegarde reseau impossible', 'error');
+        return false;
+      }
+    },
+    [token, addToast],
+  );
+
+  const saveBrandingSettings = useCallback(
+    async (nextBrandingSettings) => {
+      if (!token) return false;
+      try {
+        await apiRequest('/admin/settings/branding', {
+          method: 'PUT',
+          token,
+          body: nextBrandingSettings,
+        });
+        setBrandingSettings((prev) => ({ ...prev, ...nextBrandingSettings }));
+        addToast('Configuration branding sauvegardee', 'success');
+        return true;
+      } catch (error) {
+        addToast(error.message || 'Sauvegarde branding impossible', 'error');
+        return false;
+      }
+    },
+    [token, addToast],
+  );
+
   return (
     <AppContext.Provider
       value={{
@@ -390,6 +555,12 @@ export function AppProvider({ children }) {
         kpis,
         tarifs,
         stats,
+        networkSettings,
+        brandingSettings,
+        saveTarifs,
+        saveNetworkSettings,
+        saveBrandingSettings,
+        changePassword,
         isBootstrapping,
         refreshData,
       }}

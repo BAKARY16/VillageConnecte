@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CircleHelp, Landmark, Monitor, Moon, Palette, Sun, UserCog, Wifi } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { TARIFS } from '../data/mockData';
 
 export default function SettingsPage() {
-  const { user, addToast, theme, setTheme, updateProfile } = useApp();
-  const [tarifs, setTarifs] = useState(TARIFS);
+  const {
+    user,
+    addToast,
+    theme,
+    setTheme,
+    updateProfile,
+    changePassword,
+    tarifs: apiTarifs,
+    networkSettings: apiNetworkSettings,
+    brandingSettings: apiBrandingSettings,
+    saveTarifs,
+    saveNetworkSettings,
+    saveBrandingSettings,
+  } = useApp();
+  const [tarifs, setTarifs] = useState([]);
   const [profile, setProfile] = useState({
     prenom: user?.prenom || '',
     nom: user?.nom || '',
@@ -14,28 +26,23 @@ export default function SettingsPage() {
     newPassword: '',
     confirmPassword: '',
   });
-  const [network, setNetwork] = useState({
-    ssid: 'VillageConnecté_Dioradougou',
-    channel: '6',
-    bandwidth: '20MHz',
-    maxUsers: 50,
-    captivePortalUrl: 'http://192.168.1.108/portal',
-    apiUrl: 'https://api.village-connecte.ci',
-    cinetpayKey: 'cpk-sandbox-xxxxx',
-    cinetpaySiteId: 'vc_dioradougou_01',
-  });
-  const [branding, setBranding] = useState({
-    nomProjet: 'Village Connecté Dioradougou',
-    nomOrganisation: 'FabLab UVCI',
-    couleurPrimaire: '#55104D',
-    couleurSecondaire: '#F29A07',
-    logoUrl: '',
-  });
+  const [network, setNetwork] = useState(apiNetworkSettings || {});
+  const [branding, setBranding] = useState(apiBrandingSettings || {});
   const [activeSection, setActiveSection] = useState('tarifs');
 
-  const saveSection = (section) => {
-    addToast(`Configuration ${section} sauvegardée`, 'success');
-  };
+  useEffect(() => {
+    if (Array.isArray(apiTarifs) && apiTarifs.length) {
+      setTarifs(apiTarifs);
+    }
+  }, [apiTarifs]);
+
+  useEffect(() => {
+    setNetwork(apiNetworkSettings || {});
+  }, [apiNetworkSettings]);
+
+  useEffect(() => {
+    setBranding(apiBrandingSettings || {});
+  }, [apiBrandingSettings]);
 
   return (
     <div className="settings-layout">
@@ -104,19 +111,24 @@ export default function SettingsPage() {
             <div className="modal-footer" style={{ padding: '16px 0 0' }}>
               <button
                 className="btn btn-primary"
-                onClick={() => {
+                onClick={async () => {
                   if (profile.newPassword && profile.newPassword !== profile.confirmPassword) {
                     addToast('La confirmation du nouveau mot de passe est incorrecte', 'error');
                     return;
                   }
-                  updateProfile({
+
+                  const profileUpdated = await updateProfile({
                     prenom: profile.prenom,
                     nom: profile.nom,
                     email: profile.email,
                   });
+
                   if (profile.newPassword) {
-                    addToast('Mot de passe mis à jour (simulation)', 'success');
+                    const changed = await changePassword(profile.currentPassword, profile.newPassword);
+                    if (!changed) return;
                   }
+
+                  if (!profileUpdated) return;
                   setProfile(p => ({ ...p, currentPassword: '', newPassword: '', confirmPassword: '' }));
                 }}
               >
@@ -166,7 +178,7 @@ export default function SettingsPage() {
               <span>Les tarifs sont définis selon la politique tarifaire FabLab/UVCI pour l'accessibilité des villageois de Dioradougou (population estimée: 2 000 hab.)</span>
             </div>
             <div className="modal-footer" style={{ padding: '16px 0 0', marginTop: 16 }}>
-              <button className="btn btn-primary" onClick={() => saveSection('tarification')}>Enregistrer les tarifs</button>
+              <button className="btn btn-primary" onClick={() => saveTarifs(tarifs)}>Enregistrer les tarifs</button>
             </div>
           </div>
         )}
@@ -223,9 +235,26 @@ export default function SettingsPage() {
                   <input className="form-input" value={network.cinetpaySiteId} onChange={e => setNetwork(p => ({ ...p, cinetpaySiteId: e.target.value }))} />
                 </div>
               </div>
+
+              <div className="divider"></div>
+              <h4 style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 14 }}>Répartition financière (%)</h4>
+              <div className="grid grid-3">
+                <div className="form-group">
+                  <label className="form-label">Commission agent (%)</label>
+                  <input className="form-input" type="number" min="0" max="100" value={network.commissionAgentPct ?? 12} onChange={e => setNetwork(p => ({ ...p, commissionAgentPct: Number(e.target.value) }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Part opérateur (%)</label>
+                  <input className="form-input" type="number" min="0" max="100" value={network.partOperateurPct ?? 83} onChange={e => setNetwork(p => ({ ...p, partOperateurPct: Number(e.target.value) }))} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Caisse communautaire (%)</label>
+                  <input className="form-input" type="number" min="0" max="100" value={network.partCommunautairePct ?? 5} onChange={e => setNetwork(p => ({ ...p, partCommunautairePct: Number(e.target.value) }))} />
+                </div>
+              </div>
             </div>
             <div className="modal-footer" style={{ padding: '16px 0 0' }}>
-              <button className="btn btn-primary" onClick={() => saveSection('réseau')}>Sauvegarder</button>
+              <button className="btn btn-primary" onClick={() => saveNetworkSettings(network)}>Sauvegarder</button>
             </div>
           </div>
         )}
@@ -259,7 +288,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="modal-footer" style={{ padding: '16px 0 0' }}>
-              <button className="btn btn-primary" onClick={() => saveSection('branding')}>Appliquer</button>
+              <button className="btn btn-primary" onClick={() => saveBrandingSettings(branding)}>Appliquer</button>
             </div>
           </div>
         )}

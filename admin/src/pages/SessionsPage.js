@@ -18,8 +18,8 @@ export default function SessionsPage() {
       <div className="grid grid-3 mb-6">
         {[
           { label: 'Sessions actives', value: sessions.length, color: 'var(--text-secondary)' },
-          { label: 'Débit total estimé', value: `${sessions.reduce((s, sess) => s + sess.debitDown, 0).toFixed(1)} Mbps`, color: 'var(--text-secondary)' },
-          { label: 'Data transférée', value: `${sessions.reduce((s, sess) => s + sess.dataTotal, 0)} MB`, color: 'var(--brand-secondary)' },
+          { label: 'Débit moyen (toutes sessions)', value: `${sessions.reduce((s, sess) => s + (sess.debitDown || 0), 0).toFixed(2)} Mbps`, color: 'var(--text-secondary)' },
+          { label: 'Data totale transférée', value: `${sessions.reduce((s, sess) => s + (sess.dataTotal || 0), 0).toFixed(1)} MB`, color: 'var(--brand-secondary)' },
         ].map((s, i) => (
           <div key={i} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', borderRadius: 12, padding: '16px 18px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: 700, color: s.color }}>{s.value}</div>
