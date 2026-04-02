@@ -110,6 +110,50 @@ Le site sera accessible sur **https://villageconnecte.voisilab.online**
 
 ---
 
+## Developpement local
+
+### 1. Lancer la base de donnees
+
+```bash
+docker compose up db -d
+```
+
+### 2. Lancer le backend (Terminal 1)
+
+```bash
+cd backend
+npm install
+npm run seed    # initialiser la BDD (premiere fois uniquement)
+npm run dev     # demarre sur http://localhost:3001
+```
+
+### 3. Lancer le dashboard admin (Terminal 2)
+
+```bash
+cd admin
+npm install
+PORT=3002 npm start   # demarre sur http://localhost:3002
+```
+
+### 4. Lancer le portail captif (Terminal 3)
+
+```bash
+cd portail-captif
+npm install
+npm start              # demarre sur http://localhost:3000
+```
+
+### Acces en local
+
+| Service | URL |
+|---------|-----|
+| Portail captif | http://localhost:3000 |
+| Dashboard admin | http://localhost:3002 |
+| API Backend | http://localhost:3001 |
+| phpMyAdmin | http://localhost:8081 |
+
+---
+
 ## Commandes utiles
 
 ### Logs
