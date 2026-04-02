@@ -1,7 +1,12 @@
 const router  = require('express').Router();
 const bcrypt  = require('bcryptjs');
 const { query, queryOne } = require('../config/database');
-const { signToken, requireAuth } = require('../middleware/auth');
+const {
+  signToken,
+  requireAuth,
+  revokeToken,
+  cleanupExpiredRevokedTokens,
+} = require('../middleware/auth');
 const { validate, schemas }      = require('../middleware/validate');
 
 /**
@@ -10,6 +15,8 @@ const { validate, schemas }      = require('../middleware/validate');
  */
 router.post('/login', validate(schemas.login), async (req, res) => {
   try {
+    await cleanupExpiredRevokedTokens();
+
     const { email, username, password } = req.body;
     const emailLower = String(email || '').trim().toLowerCase();
     const usernameLower = String(username || '').trim().toLowerCase();
@@ -104,7 +111,28 @@ router.get('/me', requireAuth, async (req, res) => {
  * Logout (côté client, simplement confirmer)
  */
 router.post('/logout', requireAuth, (req, res) => {
-  return res.json({ success: true, message: 'Déconnexion réussie.' });
+  const authHeader = req.headers.authorization || '';
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice('Bearer '.length)
+    : null;
+
+  const run = async () => {
+    if (token) {
+      await revokeToken(token, {
+        adminId: req.admin?.id || null,
+        reason: 'logout',
+      });
+    }
+    return res.json({
+      success: true,
+      message: 'Déconnexion réussie. Token invalidé.',
+    });
+  };
+
+  run().catch((err) => {
+    console.error('Logout revoke token error:', err);
+    return res.status(500).json({ success: false, error: 'Erreur serveur.' });
+  });
 });
 
 /**

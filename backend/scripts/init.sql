@@ -15,6 +15,7 @@ DROP TABLE IF EXISTS agent_bornes;
 DROP TABLE IF EXISTS agents;
 DROP TABLE IF EXISTS bornes;
 DROP TABLE IF EXISTS admins;
+DROP TABLE IF EXISTS revoked_tokens;
 DROP TABLE IF EXISTS alertes;
 DROP TABLE IF EXISTS tarifs;
 DROP TABLE IF EXISTS parametres_branding;
@@ -36,6 +37,20 @@ CREATE TABLE admins (
   updated_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (email),
   INDEX idx_actif (actif)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =====================================================
+-- TABLE: revoked_tokens
+-- =====================================================
+CREATE TABLE revoked_tokens (
+  jti           VARCHAR(64)   NOT NULL PRIMARY KEY,
+  admin_id      INT UNSIGNED  NULL,
+  reason        VARCHAR(50)   NOT NULL DEFAULT 'logout',
+  expires_at    DATETIME      NOT NULL,
+  revoked_at    DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_revoked_tokens_expires_at (expires_at),
+  INDEX idx_revoked_tokens_admin_id (admin_id),
+  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =====================================================

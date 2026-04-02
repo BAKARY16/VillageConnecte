@@ -231,6 +231,8 @@ POST /api/vouchers/validate
 ```
 **⚡ Logique décompte persistant:** Le compte à rebours commence à l'activation et continue même si l'utilisateur se déconnecte. Si le même code est resaisi avant expiration → `reconnection: true`.
 
+**Règle métier importante:** Un voucher généré mais jamais saisi dans le portail n'a pas de date d'expiration définie (`activated_at = NULL`, `expires_at = NULL`). L'expiration est calculée uniquement au moment de la première validation du code sur le portail captif.
+
 **Erreurs possibles:**
 ```json
 { "success": false, "error": "Code invalide ou introuvable.", "code_error": "NOT_FOUND" }

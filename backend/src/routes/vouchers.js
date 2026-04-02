@@ -288,19 +288,32 @@ router.post('/generate', requireAuth, validate(schemas.generateVouchers), async 
     const created = [];
 
     // Insérer en batch
-    const values = codes.map(() => '(?,?,?,?,?,?,?)').join(',');
+    // Règle métier: un voucher généré n'a pas de date d'expiration définie.
+    // Le délai commence uniquement lors de la première activation sur le portail captif.
+    const values = codes.map(() => '(?,?,?,?,?,?,?,?,?,?)').join(',');
     const params = [];
     const voucherIds = [];
 
     for (const code of codes) {
       const id = uuidv4();
       voucherIds.push(id);
-      params.push(id, code, tarif.id, agent_id || null, methode, parseFloat(tarif.prix_fcfa), commission);
+      params.push(
+        id,
+        code,
+        tarif.id,
+        'actif',
+        null,
+        null,
+        agent_id || null,
+        methode,
+        parseFloat(tarif.prix_fcfa),
+        commission,
+      );
       created.push({ id, code, tarif_slug, tarif_nom: tarif.nom, prix: tarif.prix_fcfa });
     }
 
     await query(
-      `INSERT INTO vouchers (id,code,tarif_id,agent_id,methode_paiement,prix_vente,commission_agence)
+      `INSERT INTO vouchers (id,code,tarif_id,statut,activated_at,expires_at,agent_id,methode_paiement,prix_vente,commission_agence)
        VALUES ${values}`,
       params
     );

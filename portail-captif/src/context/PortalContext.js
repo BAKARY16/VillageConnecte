@@ -6,7 +6,25 @@ import moovLogo from '../assets/moov.png';
 import { HandCoins } from 'lucide-react';
 
 const PortalContext = createContext(null);
-const API_BASE = (process.env.REACT_APP_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+
+function resolveApiBaseUrl() {
+  const configuredBase = process.env.REACT_APP_API_URL;
+  if (configuredBase) {
+    return configuredBase.replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const { protocol, hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:3001/api`;
+    }
+    return '/api';
+  }
+
+  return 'http://localhost:3001/api';
+}
+
+const API_BASE = resolveApiBaseUrl();
 const PORTAL_BACKGROUND_REFRESH_MS = Number(process.env.REACT_APP_PORTAL_REFRESH_MS || 30000);
 
 function normalizeMac(value) {

@@ -4,14 +4,15 @@ Interface React du portail captif, branchee sur l'API backend.
 
 ## Demarrage
 
-1. Copier `portail-captif/.env.example` vers `portail-captif/.env`
-2. Installer:
+1. Installer:
    - `cd portail-captif`
    - `npm install`
-3. Lancer:
+2. Lancer:
    - `npm start`
 
-Le portail consomme `REACT_APP_API_URL` (par defaut `http://localhost:3001/api`).
+Le dossier `portail-captif` garde son propre `.env`, mais l'API est resolue automatiquement: `http://localhost:3001/api` en local et `/api` en production.
+
+`npm start` et `npm run build` utilisent la meme logique d'API.
 
 ## API utilisee
 

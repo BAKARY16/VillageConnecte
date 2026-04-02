@@ -50,7 +50,7 @@ services:
     environment:
       PORT: ${PORT}
       JWT_SECRET: ${JWT_SECRET}
-      JWT_EXPIRES_HOURS: ${JWT_EXPIRES_HOURS}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
       DB_HOST: db
       DB_PORT: 3306
       DB_USER: ${DB_USER}
@@ -70,7 +70,7 @@ services:
       - traefik-network
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.villageconnecte.rule=Host(`villageconnecte.voisilab.online`)"
+      - "traefik.http.routers.villageconnecte.rule=Host(`${DOMAIN}`)"
       - "traefik.http.routers.villageconnecte.entrypoints=websecure"
       - "traefik.http.routers.villageconnecte.tls.certresolver=letsencrypt"
       - "traefik.http.services.villageconnecte.loadbalancer.server.port=3001"
