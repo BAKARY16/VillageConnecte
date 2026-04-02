@@ -30,7 +30,7 @@ export default function LoginPage() {
         {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: 6, width: 140, height: 100, marginBottom: 6 }}>
-            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src={`${process.env.PUBLIC_URL}/logo.png`} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </div>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
             Plateforme d'administration du reseau Wi-Fi

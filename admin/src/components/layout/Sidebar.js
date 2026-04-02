@@ -59,7 +59,7 @@ export default function Sidebar({ currentPage, onNavigate, className = '' }) {
             </div>
           ) : (
             <img
-              src="/logo.png"
+              src={`${process.env.PUBLIC_URL}/logo.png`}
               alt="Village Connecte"
               className="sidebar-logo-image"
               onError={() => setLogoError(true)}
