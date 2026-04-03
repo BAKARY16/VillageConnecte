@@ -1,10 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 const AppContext = createContext(null);
-const API_BASE = (process.env.REACT_APP_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+
+function resolveApiBaseUrl() {
+  const configuredBase = process.env.REACT_APP_API_URL;
+  if (configuredBase) {
+    return configuredBase.replace(/\/$/, '');
+  }
+
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const { protocol, hostname } = window.location;
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      return `${protocol}//${hostname}:3001/api`;
+    }
+    return '/api';
+  }
+
+  return 'http://localhost:3001/api';
+}
+
+const API_BASE = resolveApiBaseUrl();
 const ADMIN_VISIBLE_REFRESH_MS = Number(process.env.REACT_APP_VISIBLE_REFRESH_MS || 5000);
 const ADMIN_HIDDEN_REFRESH_MS = Number(process.env.REACT_APP_HIDDEN_REFRESH_MS || 45000);
 const ADMIN_ERROR_BACKOFF_MAX_MS = Number(process.env.REACT_APP_ERROR_BACKOFF_MAX_MS || 120000);
+const ADMIN_IDLE_TIMEOUT_MS = Number(process.env.REACT_APP_IDLE_TIMEOUT_MS || 10 * 60 * 1000);
 
 const DEFAULT_KPIS = {
   usersConnectes: 0,
@@ -107,7 +126,7 @@ export function AppProvider({ children }) {
     setToasts((prev) => prev.filter((toast) => toast.id !== id));
   }, []);
 
-  const logout = useCallback(() => {
+  const clearAuthState = useCallback(() => {
     setUser(null);
     setToken(null);
     setBornes([]);
@@ -125,6 +144,36 @@ export function AppProvider({ children }) {
     localStorage.removeItem('vc_user');
     localStorage.removeItem('vc_jwt');
   }, []);
+
+  const logout = useCallback(
+    async ({ reason = 'manual', notify = true, tokenOverride } = {}) => {
+      const effectiveToken = tokenOverride || token;
+
+      if (effectiveToken) {
+        try {
+          await apiRequest('/admin/auth/logout', {
+            method: 'POST',
+            token: effectiveToken,
+          });
+        } catch (error) {
+          // En cas de panne réseau ou token déjà invalide, on purge quand même localement.
+        }
+      }
+
+      clearAuthState();
+
+      if (notify) {
+        if (reason === 'idle') {
+          addToast('Session expirée après 10 minutes d inactivité.', 'warning');
+        } else if (reason === 'manual') {
+          addToast('Déconnexion réussie.', 'info');
+        }
+      }
+
+      return true;
+    },
+    [token, clearAuthState, addToast],
+  );
 
   const refreshData = useCallback(
     async (customToken = token, { notifyError = true, silent = false } = {}) => {
@@ -149,13 +198,13 @@ export function AppProvider({ children }) {
           addToast(error.message || 'Impossible de charger les donnees', 'error');
         }
         if (/token/i.test(error.message || '')) {
-          logout();
+          clearAuthState();
         }
       } finally {
         if (!silent) setIsBootstrapping(false);
       }
     },
-    [token, addToast, logout],
+    [token, addToast, clearAuthState],
   );
 
   const login = useCallback(
@@ -230,10 +279,14 @@ export function AppProvider({ children }) {
     const savedUser = localStorage.getItem('vc_user');
     const savedToken = localStorage.getItem('vc_jwt');
     if (savedUser && savedToken) {
-      setUser(JSON.parse(savedUser));
-      setToken(savedToken);
+      try {
+        setUser(JSON.parse(savedUser));
+        setToken(savedToken);
+      } catch (error) {
+        clearAuthState();
+      }
     }
-  }, []);
+  }, [clearAuthState]);
 
   useEffect(() => {
     if (token) {
@@ -312,6 +365,41 @@ export function AppProvider({ children }) {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [token, refreshData]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let timeoutId = null;
+    let cleaning = false;
+    const idleDelay = Math.max(60_000, ADMIN_IDLE_TIMEOUT_MS);
+
+    const disconnectForInactivity = () => {
+      if (cleaning) return;
+      cleaning = true;
+      logout({ reason: 'idle', notify: true, tokenOverride: token }).finally(() => {
+        cleaning = false;
+      });
+    };
+
+    const resetTimer = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(disconnectForInactivity, idleDelay);
+    };
+
+    const activityEvents = ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'];
+    activityEvents.forEach((eventName) => {
+      window.addEventListener(eventName, resetTimer, { passive: true });
+    });
+
+    resetTimer();
+
+    return () => {
+      clearTimeout(timeoutId);
+      activityEvents.forEach((eventName) => {
+        window.removeEventListener(eventName, resetTimer);
+      });
+    };
+  }, [token, logout]);
 
   // Synchronise les notifications avec les alertes non résolues issues de l'API
   useEffect(() => {

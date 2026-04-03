@@ -36,9 +36,14 @@ export default function VouchersPage() {
     revenusTotal: vouchers.filter(v => v.statut === 'utilisé').reduce((s, v) => s + v.prix, 0),
   };
 
+  const getExpirationDisplay = (voucher) => {
+    if (voucher.dateExpiration) return voucher.dateExpiration;
+    return 'Non definie (a l activation)';
+  };
+
   const exportCSV = () => {
-    const headers = ['Code', 'Type', 'Prix (FCFA)', 'Statut', 'Agent', 'Date création', 'Date expiration', 'Paiement'];
-    const rows = filtered.map(v => [v.code, v.type, v.prix, v.statut, v.agentNom, v.dateCreation, v.dateExpiration, v.paymentMethod]);
+    const headers = ['Code', 'Type', 'Prix (FCFA)', 'Statut', 'Agent', 'Date creation', 'Date expiration', 'Paiement'];
+    const rows = filtered.map(v => [v.code, v.type, v.prix, v.statut, v.agentNom, v.dateCreation, getExpirationDisplay(v), v.paymentMethod]);
     const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -169,7 +174,7 @@ export default function VouchersPage() {
                   </td>
                   <td data-label="Création" style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{v.dateCreation}</td>
                   <td data-label="Expiration" style={{ fontSize: '0.78rem', color: v.statut === 'expiré' ? 'var(--brand-danger)' : 'var(--text-secondary)' }}>
-                    {v.dateExpiration}
+                    {getExpirationDisplay(v)}
                   </td>
                   <td data-label="Actions">
                     <VoucherActions
@@ -282,7 +287,7 @@ function VoucherCard({ voucher, onReactivate, onDelete }) {
         <MetaLine label="Création" value={voucher.dateCreation} />
         <MetaLine
           label="Expiration"
-          value={voucher.dateExpiration}
+          value={voucher.dateExpiration || 'Non definie'}
           valueColor={voucher.statut === 'expiré' ? 'var(--brand-danger)' : 'var(--text-secondary)'}
         />
       </div>

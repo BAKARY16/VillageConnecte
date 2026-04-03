@@ -4,14 +4,15 @@ Interface React admin connectee a l'API backend (plus de donnees mockees pour l'
 
 ## Demarrage
 
-1. Copier `admin/.env.example` vers `admin/.env`
-2. Installer:
+1. Installer:
    - `cd admin`
    - `npm install`
-3. Lancer:
+2. Lancer:
    - `npm start`
 
-Le front admin attend l'API sur `REACT_APP_API_URL` (par defaut `http://localhost:5000/api`).
+Le dossier `admin` garde son propre `.env`, mais l'API est resolue automatiquement: `http://localhost:3001/api` en local et `/api` en production.
+
+`npm start` et `npm run build` utilisent la meme logique d'API.
 
 ## Auth de demo (seed backend)
 

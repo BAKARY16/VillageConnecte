@@ -80,28 +80,16 @@ cd portail-captif && npm install && REACT_APP_API_URL=https://villageconnecte.vo
 
 ### 2. Configurer l'environnement
 
-Modifier le fichier `.env` avec les valeurs de production :
+Chaque dossier est autonome et garde son propre `.env`.
 
-```env
-MYSQL_ROOT_PASSWORD=<mot_de_passe_root_fort>
-MYSQL_DATABASE=village_connecte
-MYSQL_USER=vc_user
-MYSQL_PASSWORD=<mot_de_passe_fort>
-
-DB_HOST=db
-DB_PORT=3306
-DB_NAME=village_connecte
-DB_USER=vc_user
-DB_PASSWORD=<mot_de_passe_fort>
-PORT=3001
-NODE_ENV=production
-JWT_SECRET=<secret_aleatoire_long>
-JWT_EXPIRES_HOURS=8
-CORS_ORIGINS=https://villageconnecte.voisilab.online
-
-REACT_APP_API_URL=https://villageconnecte.voisilab.online/api
-DOMAIN=villageconnecte.voisilab.online
+```text
+backend/.env
+admin/.env
+portail-captif/.env
 ```
+
+Le backend garde les variables serveur et base de donnees dans `backend/.env`.
+Les frontends `admin` et `portail-captif` gardent chacun leur propre `.env`, sans configuration API supplémentaire.
 
 ### 3. Lancer les services
 
@@ -135,7 +123,7 @@ npm run dev     # demarre sur http://localhost:3001
 ```bash
 cd admin
 npm install
-PORT=3002 npm start   # demarre sur http://localhost:3002
+npm start
 ```
 
 ### 4. Lancer le portail captif (Terminal 3)
@@ -143,15 +131,19 @@ PORT=3002 npm start   # demarre sur http://localhost:3002
 ```bash
 cd portail-captif
 npm install
-npm start              # demarre sur http://localhost:3000
+PORT=3002 npm start
 ```
+
+> Si vous gardez vos ports locaux actuels, l'admin reste accessible sur `http://localhost:3000/admin` et le portail captif sur `http://localhost:3002`.
+
+> Les deux frontends utilisent `http://localhost:3001/api` en local, puis `/api` en production pour rester sur le même domaine que le backend.
 
 ### Acces en local
 
 | Service | URL |
 |---------|-----|
-| Portail captif | http://localhost:3000 |
-| Dashboard admin | http://localhost:3002 |
+| Portail captif | http://localhost:3002 |
+| Dashboard admin | http://localhost:3000/admin |
 | API Backend | http://localhost:3001 |
 | phpMyAdmin | http://localhost:8081 |
 

@@ -14,7 +14,7 @@ export default function LoginPage() {
     setLoading(true);
     const ok = await login(form);
     if (!ok) {
-      setError('Identifiants incorrects. Essayez admin / admin123');
+      setError('Identifiant ou mot de passe incorrect !');
       setLoading(false);
     } else {
       addToast('Connexion réussie — Bienvenue !', 'success');
