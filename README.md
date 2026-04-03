@@ -71,9 +71,12 @@ VillageConnecte/
 ### 1. Builder les frontends
 
 ```bash
-cd admin && npm install && npm run build && cd ..
-cd portail-captif && npm install && npm run build && cd ..
+cd admin && npm install && REACT_APP_API_URL=https://villageconnecte.voisilab.online/api npm run build && cd ..
+cd portail-captif && npm install && REACT_APP_API_URL=https://villageconnecte.voisilab.online/api npm run build && cd ..
 ```
+
+> **Important** : la variable `REACT_APP_API_URL` doit etre definie au moment du build.
+> Sans elle, les frontends tenteront d'appeler `http://localhost:3001` et seront bloques par le navigateur (CSP / mixed content).
 
 ### 2. Configurer l'environnement
 
