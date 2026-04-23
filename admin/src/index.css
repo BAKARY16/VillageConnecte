@@ -816,6 +816,11 @@ h4 { font-size: 1.1rem; font-weight: 500; }
   100% { background-position: -200% 0; }
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 /* ===== LOGIN PAGE ===== */
 .login-page {
   min-height: 100vh;

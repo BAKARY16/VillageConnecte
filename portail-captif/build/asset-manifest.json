@@ -1,18 +1,19 @@
 {
   "files": {
-    "main.css": "/static/css/main.6243214d.css",
-    "main.js": "/static/js/main.afa3f73f.js",
+    "main.css": "/static/css/main.28adef47.css",
+    "main.js": "/static/js/main.3172bb5a.js",
     "static/media/logo.png": "/static/media/logo.f9e432d0a756462de537.png",
+    "static/media/mantongouine.jpg": "/static/media/mantongouine.1f68e69a7e5f8242e041.jpg",
     "static/media/mtn.png": "/static/media/mtn.183a3513b564ccd1c937.png",
     "static/media/moov.png": "/static/media/moov.3ede1a56413483490df1.png",
     "static/media/wave.png": "/static/media/wave.483f35dc4e8bdb2fc01c.png",
     "static/media/orange.png": "/static/media/orange.3e9d4a169b59e633db91.png",
     "index.html": "/index.html",
-    "main.6243214d.css.map": "/static/css/main.6243214d.css.map",
-    "main.afa3f73f.js.map": "/static/js/main.afa3f73f.js.map"
+    "main.28adef47.css.map": "/static/css/main.28adef47.css.map",
+    "main.3172bb5a.js.map": "/static/js/main.3172bb5a.js.map"
   },
   "entrypoints": [
-    "static/css/main.6243214d.css",
-    "static/js/main.afa3f73f.js"
+    "static/css/main.28adef47.css",
+    "static/js/main.3172bb5a.js"
   ]
 }

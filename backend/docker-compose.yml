@@ -48,6 +48,16 @@ services:
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:3002}
       METRICS_INGEST_TOKEN: ${METRICS_INGEST_TOKEN:-}
+      MIKROTIK_ENABLED: ${MIKROTIK_ENABLED:-false}
+      MIKROTIK_HOST: ${MIKROTIK_HOST:-192.168.88.1}
+      MIKROTIK_USER: ${MIKROTIK_USER:-api-user}
+      MIKROTIK_PASSWORD: ${MIKROTIK_PASSWORD:-}
+      MIKROTIK_PORT: ${MIKROTIK_PORT:-8728}
+      MIKROTIK_TIMEOUT_SECONDS: ${MIKROTIK_TIMEOUT_SECONDS:-30}
+      MIKROTIK_CONNECT_COOLDOWN_MS: ${MIKROTIK_CONNECT_COOLDOWN_MS:-60000}
+      SESSION_EXPIRY_CHECK_MS: ${SESSION_EXPIRY_CHECK_MS:-30000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "3001:3001"
     depends_on:
@@ -59,7 +69,7 @@ services:
       - ./src:/app/src:ro
       - ./scripts:/app/scripts:ro
     command: >
-      sh -c "node scripts/seed.js && node src/server.js"
+      sh -c "node src/server.js"
 
   # ── phpMyAdmin (interface DB) ──────────────────────
   phpmyadmin:

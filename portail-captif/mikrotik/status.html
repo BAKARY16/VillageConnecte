@@ -1,0 +1,902 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="icon" type="image/png" href="logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Village Connecte - Session active</title>
+  <style>
+    :root {
+      --brand-primary: #55104d;
+      --brand-secondary: #f29a07;
+      --brand-success: #16a34a;
+      --bg-base: #f4f6fa;
+      --bg-card: #fffdfd;
+      --bg-soft: #f1ecf7;
+      --text-primary: #2a1833;
+      --text-muted: #707b8f;
+      --border: rgba(85, 16, 77, 0.12);
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --shadow: 0 8px 28px rgba(85, 16, 77, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .root {
+      min-height: 100vh;
+      min-height: 100dvh;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .root:before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url("backgrounds.jpg") no-repeat center center / cover;
+      filter: blur(4px);
+      opacity: 0.9;
+      z-index: 0;
+    }
+
+    .root:after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(244, 246, 250, 0.18), rgba(244, 246, 250, 0.85));
+      z-index: 0;
+    }
+
+    .root > * { position: relative; z-index: 1; }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: clamp(10px, 2.5vw, 16px) clamp(12px, 4vw, 22px);
+      border-bottom: 1px solid rgba(85, 16, 77, 0.08);
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .brand img {
+      width: clamp(36px, 8vw, 55px);
+      height: clamp(28px, 6vw, 42px);
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    .brand-title {
+      font-size: clamp(11px, 2.5vw, 14px);
+      font-weight: 700;
+      color: var(--brand-primary);
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--brand-success);
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(22, 163, 74, 0.35);
+      background: rgba(22, 163, 74, 0.12);
+    }
+
+    .status-badge:before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--brand-success);
+      box-shadow: 0 0 0 rgba(22, 163, 74, 0.4);
+      animation: pulse 1.8s ease-out infinite;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      padding: clamp(14px, 4vw, 28px) clamp(10px, 3vw, 16px) clamp(24px, 5vw, 44px);
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    .hero {
+      background: #f9f7fc;
+      border: 1px solid rgba(22, 163, 74, 0.25);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      padding: clamp(18px, 4vw, 28px) clamp(14px, 4vw, 24px);
+      text-align: center;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      margin: 0 0 6px;
+      font-size: clamp(1.05rem, 3.5vw, 1.3rem);
+      color: var(--brand-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+    }
+
+    .hero .code {
+      margin: 10px 0 14px;
+      font-family: "Courier New", monospace;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--text-primary);
+    }
+
+    .timer-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .timer {
+      font-family: "Courier New", monospace;
+      font-size: clamp(1.6rem, 6vw, 2.2rem);
+      font-weight: 800;
+      color: var(--brand-primary);
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+
+    .progress {
+      width: 100%;
+      max-width: 290px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(85, 16, 77, 0.14);
+      margin: 0 auto 4px;
+      overflow: hidden;
+    }
+
+    .progress > span {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--brand-success), var(--brand-primary));
+      transition: width 1s linear;
+    }
+
+    .small {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      background: var(--bg-card);
+      box-shadow: 0 8px 20px rgba(85, 16, 77, 0.06);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(85, 16, 77, 0.08);
+      font-size: 0.83rem;
+    }
+
+    .row:last-child { border-bottom: 0; }
+
+    .row .k { color: var(--text-muted); }
+    .row .v { font-weight: 700; color: var(--text-primary); text-align: right; }
+
+    .btn {
+      width: 100%;
+      border: 0;
+      border-radius: var(--radius-md);
+      padding: clamp(11px, 2.5vw, 14px) 14px;
+      font-size: clamp(0.82rem, 2vw, 0.9rem);
+      font-weight: 700;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 10px;
+      min-height: 46px;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+    }
+
+    .btn-danger {
+      background: var(--brand-primary);
+      color: #fff;
+    }
+
+    .btn-danger:hover { background: #6d1c62; }
+
+    .footer {
+      text-align: center;
+      color: #111;
+      font-size: 0.72rem;
+      padding: 16px 12px 20px;
+    }
+
+    .offline {
+      border: 1px solid rgba(220, 38, 38, 0.3);
+      background: rgba(220, 38, 38, 0.08);
+      color: #7f1d1d;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.84rem;
+      text-align: center;
+    }
+
+    @media (max-width: 360px) {
+      .brand-title { display: none; }
+      .hero .code { font-size: 0.9rem; letter-spacing: 0.08em; }
+      .dialog-box { padding: 20px 16px 18px; }
+    }
+
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.4); }
+      70% { box-shadow: 0 0 0 9px rgba(22, 163, 74, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+    }
+
+    /* ── Dialog de confirmation ─────────────────────── */
+    .dialog-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      background: rgba(0, 0, 0, 0.52);
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dialog-overlay.open {
+      display: flex;
+    }
+
+    .dialog-box {
+      background: #fff;
+      border-radius: 18px;
+      padding: 28px 24px 22px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+      box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+      animation: dialogIn 0.18s ease;
+    }
+
+    @keyframes dialogIn {
+      from { transform: scale(0.92); opacity: 0; }
+      to   { transform: scale(1);    opacity: 1; }
+    }
+
+    .dialog-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    .dialog-title {
+      margin: 0 0 6px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--brand-primary);
+    }
+
+    .dialog-msg {
+      margin: 0 0 20px;
+      font-size: 0.83rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    .dialog-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .dialog-actions .btn {
+      flex: 1;
+      margin-top: 0;
+      padding: 11px;
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: var(--brand-primary);
+      border: 1.5px solid var(--brand-primary);
+    }
+
+    .btn-outline:hover { background: var(--bg-soft); }
+  </style>
+</head>
+<body>
+  <div class="root">
+    <header class="header">
+      <div class="brand">
+        <img src="logo.png" alt="Village Connecte">
+        <div class="brand-title">Village Connecte · Session active</div>
+      </div>
+      <div class="status-badge" id="status-badge">Connecte</div>
+    </header>
+
+    <main class="main">
+      <div class="container">
+        <section class="hero" id="hero-card">
+          <h1 id="hero-title">Connexion en cours de validation</h1>
+          <div class="code" id="session-code">--</div>
+          <div class="timer-label">Temps restant</div>
+          <div class="timer" id="time-left">--:--:--</div>
+          <div class="progress"><span id="time-bar"></span></div>
+          <div class="small" id="time-pct">En attente des données de session</div>
+        </section>
+
+        <section class="card" id="session-card">
+          <div class="row"><span class="k">Utilisateur</span><span class="v" id="session-user">--</span></div>
+          <div class="row"><span class="k">Uptime</span><span class="v" id="uptime">--</span></div>
+          <div class="row"><span class="k">Download</span><span class="v" id="download">--</span></div>
+          <div class="row"><span class="k">Upload</span><span class="v" id="upload">--</span></div>
+          <div class="row"><span class="k">IP client</span><span class="v" id="client-ip">--</span></div>
+          <div class="row"><span class="k">MAC</span><span class="v" id="client-mac">--</span></div>
+          <button class="btn btn-danger" id="disconnect-btn" type="button">Se deconnecter</button>
+        </section>
+
+        <section class="offline" id="offline-card" style="display:none;">
+          Session non active ou expiree. Retournez a la page de connexion pour saisir votre code.
+          <div style="margin-top:10px;"><a id="btn-retour-login" href="login.html" class="btn btn-danger" style="margin-top:0;">Retour login</a></div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="footer">
+      Reseau WiFi communautaire · Dioradougou · FabLab UVCI
+    </footer>
+
+    <!-- Dialog de confirmation déconnexion -->
+    <div class="dialog-overlay" id="disconnect-dialog" role="dialog" aria-modal="true">
+      <div class="dialog-box">
+        <div class="dialog-icon">⚠️</div>
+        <p class="dialog-title">Confirmer la deconnexion</p>
+        <p class="dialog-msg">Votre session sera terminee. Vous serez redirige vers la page de connexion pour saisir votre code a nouveau.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-outline" id="dialog-cancel">Annuler</button>
+          <button class="btn btn-danger" id="dialog-confirm">Se deconnecter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.VC_API_BASE = (function () {
+      var base = 'http://192.168.1.128:3001';
+      if (window.location.protocol === 'https:') return base.replace('http:', 'https:');
+      return base;
+    })();
+  </script>
+
+  <!-- Variables MikroTik injectées côté serveur pour les utilisateurs authentifiés -->
+  <input type="hidden" id="mt-username" value="$(username)">
+  <input type="hidden" id="mt-uptime" value="$(uptime)">
+  <input type="hidden" id="mt-session-time-left" value="$(session-time-left)">
+  <input type="hidden" id="mt-bytes-in" value="$(bytes-in)">
+  <input type="hidden" id="mt-bytes-out" value="$(bytes-out)">
+  <input type="hidden" id="mt-ip" value="$(ip)">
+  <input type="hidden" id="mt-mac" value="$(mac)">
+  <input type="hidden" id="mt-link-login" value="$(link-login)">
+  <input type="hidden" id="mt-link-logout" value="$(link-logout)">
+
+  <script>
+    (function () {
+      var apiBase = window.VC_API_BASE || 'http://192.168.1.128:3001';
+      var heroCard = document.getElementById('hero-card');
+      var sessionCard = document.getElementById('session-card');
+      var offlineCard = document.getElementById('offline-card');
+      var statusBadge = document.getElementById('status-badge');
+      var heroTitle = document.getElementById('hero-title');
+      var sessionCodeEl = document.getElementById('session-code');
+      var timeLeftEl = document.getElementById('time-left');
+      var timeBarEl = document.getElementById('time-bar');
+      var timePctEl = document.getElementById('time-pct');
+      var sessionUserEl = document.getElementById('session-user');
+      var uptimeEl = document.getElementById('uptime');
+      var downloadEl = document.getElementById('download');
+      var uploadEl = document.getElementById('upload');
+      var clientIpEl = document.getElementById('client-ip');
+      var clientMacEl = document.getElementById('client-mac');
+      var disconnectBtn = document.getElementById('disconnect-btn');
+      var btnRetourLogin = document.getElementById('btn-retour-login');
+
+      function getQuery(name) {
+        return new URLSearchParams(window.location.search).get(name) || '';
+      }
+
+      function cleanValue(value) {
+        var text = String(value || '').trim();
+        if (!text || text.indexOf('$(') === 0) return '';
+        return text;
+      }
+
+      function lsGet(key) {
+        try { return localStorage.getItem(key) || ''; } catch(e) { return ''; }
+      }
+
+      function lsSet(key, value) {
+        try { localStorage.setItem(key, value); } catch(e) {}
+      }
+
+      // ── Lire les variables MikroTik injectées ────────────────────
+      var mtUsername = cleanValue(document.getElementById('mt-username').value);
+      var mtUptime = cleanValue(document.getElementById('mt-uptime').value);
+      var mtTimeLeft = cleanValue(document.getElementById('mt-session-time-left').value);
+      var mtBytesIn = cleanValue(document.getElementById('mt-bytes-in').value);
+      var mtBytesOut = cleanValue(document.getElementById('mt-bytes-out').value);
+      var mtIp = cleanValue(document.getElementById('mt-ip').value);
+      var mtMac = cleanValue(document.getElementById('mt-mac').value);
+      var mtLinkLogin = cleanValue(document.getElementById('mt-link-login').value);
+      var mtLinkLogout = cleanValue(document.getElementById('mt-link-logout').value);
+
+      // ── Corriger le bouton "Retour login" ────────────────────────
+      if (mtLinkLogin) {
+        btnRetourLogin.href = mtLinkLogin;
+      }
+
+      // ── Gérer le flag de déconnexion volontaire sans casser la reconnexion ────
+      // Ancien comportement: on bloquait toujours la première ouverture de status,
+      // ce qui causait "session indisponible" puis OK au refresh.
+      var disconnectingFlag = lsGet('vc_disconnecting') === '1';
+      if (disconnectingFlag) {
+        lsSet('vc_disconnecting', '');
+        // On ne bloque QUE s'il n'y a aucun indice d'une nouvelle connexion
+        // (ni username injecté, ni code en URL, ni sessionId).
+        var hasFreshContext = !!(mtUsername || getQuery('code') || getQuery('sessionId'));
+        if (!hasFreshContext) {
+          lsSet('vc_last_session_id', '');
+          // NE PAS effacer vc_last_code : il sert à la reconnexion
+          showOffline('Session terminée. Saisissez un code pour vous reconnecter.');
+          return;
+        }
+      }
+
+      // ── Résoudre code et sessionId ───────────────────────────────
+      // Priorité : MikroTik $(username) > URL ?code= > localStorage
+      var sessionCode = mtUsername || getQuery('code') || lsGet('vc_last_code') || '';
+      var sessionId = getQuery('sessionId') || lsGet('vc_last_session_id') || '';
+
+      if (sessionCode) {
+        lsSet('vc_last_code', sessionCode);
+      }
+
+      function pad(n) { return (n < 10 ? '0' : '') + n; }
+
+      function formatSeconds(total) {
+        total = Math.max(0, Math.floor(Number(total) || 0));
+        var h = Math.floor(total / 3600);
+        var m = Math.floor((total % 3600) / 60);
+        var s = total % 60;
+        return pad(h) + ':' + pad(m) + ':' + pad(s);
+      }
+
+      // Parse "1d2h30m20s" ou "00:01:30" en secondes
+      function parseUptime(str) {
+        str = String(str || '').trim();
+        if (!str) return 0;
+        if (/^\d{2}:\d{2}:\d{2}$/.test(str)) {
+          var p = str.split(':').map(Number);
+          return p[0] * 3600 + p[1] * 60 + p[2];
+        }
+        var total = 0;
+        var d = str.match(/(\d+)d/); if (d) total += parseInt(d[1], 10) * 86400;
+        var h = str.match(/(\d+)h/); if (h) total += parseInt(h[1], 10) * 3600;
+        var m = str.match(/(\d+)m/); if (m) total += parseInt(m[1], 10) * 60;
+        var s = str.match(/(\d+)s/); if (s) total += parseInt(s[1], 10);
+        return total;
+      }
+
+      function formatUptime(seconds) {
+        var total = Math.max(0, Math.floor(Number(seconds) || 0));
+        if (total === 0) return '--';
+        var h = Math.floor(total / 3600);
+        var m = Math.floor((total % 3600) / 60);
+        var s = total % 60;
+        if (h > 0) return h + 'h ' + pad(m) + 'min';
+        if (m > 0) return m + 'min ' + pad(s) + 's';
+        return s + 's';
+      }
+
+      function formatBytes(mb) {
+        var num = parseFloat(mb) || 0;
+        if (num >= 1024) return (num / 1024).toFixed(2) + ' GB';
+        if (num >= 1) return num.toFixed(2) + ' MB';
+        return (num * 1024).toFixed(0) + ' KB';
+      }
+
+      // ── Countdown côté client ────────────────────────────────────
+      var _secsRemaining = 0;
+      var _totalSecs = 0;
+      var _countdownTimer = null;
+
+      function startCountdown(secsRemaining, totalSecs) {
+        _secsRemaining = Math.max(0, secsRemaining);
+        _totalSecs = Math.max(1, totalSecs || secsRemaining);
+        if (_countdownTimer) clearInterval(_countdownTimer);
+        _countdownTimer = setInterval(function () {
+          _secsRemaining = Math.max(0, _secsRemaining - 1);
+          renderTimer(_secsRemaining, _totalSecs);
+          if (_secsRemaining === 0) {
+            clearInterval(_countdownTimer);
+            window.location.reload();
+          }
+        }, 1000);
+        renderTimer(_secsRemaining, _totalSecs);
+      }
+
+      function renderTimer(secs, total) {
+        if (secs > 0) {
+          timeLeftEl.innerHTML = formatSeconds(secs);
+          var pct = total > 0 ? Math.max(1, Math.min(100, Math.round((secs / total) * 100))) : 100;
+          timeBarEl.style.width = pct + '%';
+          timePctEl.innerHTML = pct + '% du temps restant';
+        } else {
+          timeLeftEl.innerHTML = '00:00:00';
+          timeBarEl.style.width = '0%';
+          timePctEl.innerHTML = 'Session terminee';
+        }
+      }
+
+      // Wrapper fetch : bascule HTTP <-> HTTPS si erreur reseau (sans memoriser)
+      async function apiFetch(url, options) {
+        try {
+          return await fetch(url, options);
+        } catch(networkErr) {
+          // Protocole alternatif — on essaie sans changer l'état global
+          var isHttps = url.startsWith('https:');
+          var altUrl  = isHttps ? url.replace('https:', 'http:') : url.replace('http:', 'https:');
+          return fetch(altUrl, options);
+        }
+      }
+
+      async function apiJson(path, method, body) {
+        var response = await apiFetch(apiBase + path, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: body ? JSON.stringify(body) : undefined,
+          credentials: 'omit',
+        });
+        var payload = await response.json().catch(function () { return {}; });
+        if (!response.ok || payload.ok === false || payload.success === false) {
+          throw new Error(payload.error || payload.message || 'Requete impossible');
+        }
+        return payload;
+      }
+
+      function showOffline(message) {
+        heroTitle.innerHTML = 'Session indisponible';
+        sessionCodeEl.innerHTML = '--';
+        timeLeftEl.innerHTML = '--:--:--';
+        timePctEl.innerHTML = message || 'Retournez sur la page de connexion.';
+        timeBarEl.style.width = '0%';
+        statusBadge.innerHTML = 'Hors ligne';
+        heroCard.style.opacity = '0.8';
+        sessionCard.style.display = 'none';
+        offlineCard.style.display = 'block';
+      }
+
+      // Afficher immédiatement les données MikroTik locales si disponibles (avant la réponse API)
+      function renderMikrotikLocal() {
+        if (!sessionCode) return;
+        sessionCodeEl.innerHTML = sessionCode;
+        sessionUserEl.innerHTML = sessionCode;
+        heroTitle.innerHTML = 'Connexion en cours de verification...';
+        sessionCard.style.display = 'block';
+        offlineCard.style.display = 'none';
+
+        if (mtUptime) uptimeEl.innerHTML = formatUptime(parseUptime(mtUptime));
+        if (mtTimeLeft) {
+          var tl = parseUptime(mtTimeLeft);
+          if (tl > 0) {
+            timeLeftEl.innerHTML = formatSeconds(tl);
+            timeBarEl.style.width = '50%';
+            timePctEl.innerHTML = 'Verification en cours...';
+          }
+        }
+        if (mtBytesIn || mtBytesOut) {
+          var dlMb = (parseInt(mtBytesIn, 10) || 0) / (1024 * 1024);
+          var ulMb = (parseInt(mtBytesOut, 10) || 0) / (1024 * 1024);
+          downloadEl.innerHTML = formatBytes(dlMb);
+          uploadEl.innerHTML = formatBytes(ulMb);
+        }
+        if (mtIp) clientIpEl.innerHTML = mtIp;
+        if (mtMac) clientMacEl.innerHTML = mtMac;
+      }
+
+      function renderSession(payload) {
+        var session = payload.session || payload;
+        var live = payload.mikrotikLive || null;
+
+        var secsLeft = (live && live.sessionTimeLeftSeconds != null)
+          ? live.sessionTimeLeftSeconds
+          : Number(session.secondesRestantes || 0);
+        // Priorité données MikroTik locales pour le time-left si API ne le fournit pas
+        if (secsLeft === 0 && mtTimeLeft) secsLeft = parseUptime(mtTimeLeft);
+        var totalSecs = Number(session.duree || 0) * 3600 || secsLeft;
+
+        heroTitle.innerHTML = (payload.active === false) ? 'Session terminee' : 'Connecte a Internet ✓';
+        sessionCodeEl.innerHTML = session.code || sessionCode || '--';
+        sessionUserEl.innerHTML = session.code || '--';
+
+        if (live && live.uptimeSeconds > 0) {
+          uptimeEl.innerHTML = formatUptime(live.uptimeSeconds);
+        } else if (mtUptime) {
+          uptimeEl.innerHTML = formatUptime(parseUptime(mtUptime));
+        } else if (session.heureDebut) {
+          var elapsed = Math.floor((Date.now() - new Date(session.heureDebut).getTime()) / 1000);
+          uptimeEl.innerHTML = formatUptime(elapsed);
+        } else {
+          uptimeEl.innerHTML = '--';
+        }
+
+        var dlMb = (live && live.dataDownMb != null) ? live.dataDownMb : (session.dataDownMb || 0);
+        var ulMb = (live && live.dataUpMb != null) ? live.dataUpMb : (session.dataUpMb || 0);
+        // Fallback vers bytes MikroTik locaux si le backend n'a pas encore les données
+        if (dlMb === 0 && mtBytesIn) dlMb = (parseInt(mtBytesIn, 10) || 0) / (1024 * 1024);
+        if (ulMb === 0 && mtBytesOut) ulMb = (parseInt(mtBytesOut, 10) || 0) / (1024 * 1024);
+        downloadEl.innerHTML = formatBytes(dlMb);
+        uploadEl.innerHTML = formatBytes(ulMb);
+
+        var ip = (live && live.address) || session.ip || mtIp || getQuery('ip') || '--';
+        var mac = (live && live.mac) || session.mac || mtMac || getQuery('mac') || '--';
+        clientIpEl.innerHTML = ip;
+        clientMacEl.innerHTML = mac;
+
+        statusBadge.innerHTML = (payload.active === false) ? 'Expiree' : 'Connecte';
+        offlineCard.style.display = 'none';
+        sessionCard.style.display = 'block';
+        heroCard.style.opacity = '1';
+
+        if (secsLeft > 0 && payload.active !== false) {
+          startCountdown(secsLeft, totalSecs);
+        } else if (payload.active === false) {
+          if (_countdownTimer) clearInterval(_countdownTimer);
+          renderTimer(0, totalSecs);
+        } else {
+          if (_countdownTimer) clearInterval(_countdownTimer);
+          timeLeftEl.innerHTML = 'Illimite';
+          timeBarEl.style.width = '100%';
+          timePctEl.innerHTML = 'Session active';
+        }
+      }
+
+      async function resolveSession() {
+        // 1. Si on a sessionId direct, tenter le status
+        if (sessionId) {
+          try {
+            var payload = await apiJson('/api/captive/sessions/' + encodeURIComponent(sessionId) + '/status', 'GET');
+            if (payload.active !== false) return payload;
+            // session expirée dans la DB → effacer
+            lsSet('vc_last_session_id', '');
+            sessionId = '';
+          } catch (err) {
+            console.warn('status by id failed:', err.message);
+            lsSet('vc_last_session_id', '');
+            sessionId = '';
+          }
+        }
+
+        // 2. Si on a le code, chercher une session active existante (LECTURE SEULE)
+        //    IMPORTANT : on n'appelle JAMAIS /activate ici.
+        //    /activate est appelé uniquement par login.html avant la soumission du formulaire.
+        //    Si on appelle /activate ici → MikroTik recrée l'utilisateur sans authentification
+        //    réelle → internet reste bloqué + boucle infinie.
+        if (sessionCode) {
+          try {
+            var byCode = await apiJson('/api/captive/sessions/by-code/' + encodeURIComponent(sessionCode), 'GET');
+            if (byCode.ok && byCode.active && byCode.session && byCode.session.id) {
+              sessionId = byCode.session.id;
+              lsSet('vc_last_session_id', sessionId);
+              lsSet('vc_last_code', sessionCode);
+              return byCode;
+            }
+          } catch (err) {
+            // 404 = aucune session active → session terminée ou expirée
+            if (err.message && err.message.indexOf('404') !== -1) {
+              throw new Error('Session expiree ou terminee. Reconnectez-vous depuis la page de connexion.');
+            }
+            console.warn('by-code lookup failed:', err.message);
+          }
+        }
+
+        throw new Error('Aucune session active. Saisissez votre code sur la page de connexion.');
+      }
+
+      function refreshFromApi() {
+        if (!sessionId) return;
+        apiJson('/api/captive/sessions/' + encodeURIComponent(sessionId) + '/status', 'GET')
+          .then(function (payload) {
+            renderSession(payload);
+            if (payload.active === false) {
+              lsSet('vc_last_session_id', '');
+            }
+          })
+          .catch(function (error) {
+            console.warn('poll error:', error.message);
+          });
+      }
+
+      var disconnectDialog = document.getElementById('disconnect-dialog');
+      var dialogCancel = document.getElementById('dialog-cancel');
+      var dialogConfirm = document.getElementById('dialog-confirm');
+
+      // Ouvrir la dialog au clic sur "Se déconnecter"
+      disconnectBtn.onclick = function () {
+        disconnectDialog.classList.add('open');
+      };
+
+      // Fermer sans déconnecter
+      dialogCancel.onclick = function () {
+        disconnectDialog.classList.remove('open');
+      };
+
+      // Fermer si clic sur le fond
+      disconnectDialog.addEventListener('click', function (e) {
+        if (e.target === disconnectDialog) disconnectDialog.classList.remove('open');
+      });
+
+      // Confirmer la déconnexion
+      dialogConfirm.onclick = async function () {
+        dialogConfirm.disabled = true;
+        dialogConfirm.innerHTML = 'Deconnexion...';
+
+        // 1. Vider la session locale (le code est conservé pour logout.html)
+        lsSet('vc_last_session_id', '');
+
+        // 2. Appeler le backend EN SYNCHRONE
+        //    Le backend attend que MikroTik retire la session AVANT de répondre.
+        //    Cela garantit que quand on navigue vers login, MikroTik ne redirige plus vers status.
+        try {
+          if (sessionId) {
+            await apiJson(
+              '/api/captive/sessions/' + encodeURIComponent(sessionId) + '/disconnect',
+              'POST',
+              { code: sessionCode || undefined }
+            );
+          } else if (sessionCode) {
+            // Fallback : déconnexion par code si sessionId non disponible
+            await apiJson('/api/captive/sessions/disconnect-by-code', 'POST', { code: sessionCode });
+          }
+        } catch (error) {
+          console.log('disconnect api error (non bloquant):', error.message);
+          // On continue quand meme
+        }
+
+        // 3. Marquer la déconnexion pour bloquer resolveSession au prochain chargement
+        lsSet('vc_disconnecting', '1');
+
+        // 4. Naviguer vers $(link-logout) — c'est l'URL NATIVE MikroTik qui :
+        //    a) coupe la session hotspot côté MikroTik (cookie de session invalidé)
+        //    b) redirige vers logout.html (ou login.html)
+        //    Sans ça, MikroTik voit la requête login avec la session encore active
+        //    et redirige vers status.html en boucle.
+        //
+        //    Fallback HTTP absolu : si $(link-logout) n'est pas injecté (PC/tablette
+        //    sans CNA), construire l'URL en HTTP absolu pour forcer le passage par
+        //    logout.html (URL relative ou HTTPS bloqueraient la redirection).
+        var logoutUrl = mtLinkLogout
+          || ('http://' + window.location.hostname + '/logout.html');
+        window.location.href = logoutUrl;
+      };
+
+      // Afficher immédiatement les données locales MikroTik pour éviter le flash blanc
+      if (sessionCode || mtUsername) {
+        renderMikrotikLocal();
+      }
+
+      // ── Stratégie d'affichage ──────────────────────────────────
+      // CAS 1 : MikroTik a injecté $(username) → session confirmée côté hotspot.
+      //   Afficher directement. L'API enrichit en arrière-plan après 2s
+      //   (délai nécessaire : le firewall MikroTik met 1-3s à ouvrir l'accès réseau).
+      // CAS 2 : Pas de $(username) (rechargement manuel, mini-webview iOS, etc.)
+      //   → dépend de l'API avec retry.
+
+      if (mtUsername) {
+        // CAS 1 — MikroTik dit : session active
+        heroTitle.innerHTML = 'Connect\u00e9 \u00e0 Internet \u2713';
+        statusBadge.innerHTML = 'Connect\u00e9';
+        sessionCodeEl.innerHTML = mtUsername;
+        sessionUserEl.innerHTML = mtUsername;
+        sessionCard.style.display = 'block';
+        offlineCard.style.display = 'none';
+        heroCard.style.opacity = '1';
+        if (mtTimeLeft) {
+          var tl = parseUptime(mtTimeLeft);
+          if (tl > 0) startCountdown(tl, tl);
+        }
+        // Enrichir depuis l'API après 2s (firewall a le temps de s'ouvrir)
+        setTimeout(async function () {
+          try {
+            var payload = await resolveSession();
+            renderSession(payload);
+          } catch (err) {
+            console.warn('API enrichissement (non bloquant):', err.message);
+          }
+          setInterval(refreshFromApi, 15000);
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) { refreshFromApi(); }
+          });
+        }, 2000);
+
+      } else {
+        // CAS 2 — Pas de variables MikroTik injectées (PC, tablette, mini-webview sans CNA)
+        // Si le code vient de l'URL ?code= → connexion fraîche : attendre que MikroTik
+        // valide la session côté hotspot (prend 1-3s) avant le premier appel API.
+        (async function () {
+          var MAX_TRIES = 6;
+          var DELAY_MS  = 2000;
+          var freshConnect = !!getQuery('code'); // vient de login.html ou reconnect.html
+          var lastErr   = null;
+
+          for (var attempt = 0; attempt < MAX_TRIES; attempt++) {
+            var waitMs;
+            if (attempt === 0) {
+              // Connexion fraîche : délai initial plus long pour laisser MikroTik s'initialiser
+              waitMs = freshConnect ? 3000 : 500;
+            } else {
+              waitMs = DELAY_MS;
+            }
+            await new Promise(function (r) { setTimeout(r, waitMs); });
+
+            try {
+              var payload = await resolveSession();
+              renderSession(payload);
+              setInterval(refreshFromApi, 15000);
+              document.addEventListener('visibilitychange', function () {
+                if (!document.hidden) { refreshFromApi(); }
+              });
+              return;
+            } catch (err) {
+              lastErr = err;
+              console.warn('resolveSession tentative ' + (attempt + 1) + ':', err.message);
+            }
+          }
+          lsSet('vc_last_session_id', '');
+          showOffline(lastErr ? lastErr.message : 'Session introuvable. Cliquez sur "Retour login" pour vous reconnecter.');
+        })();
+      }
+    })();
+  </script>
+</body>
+</html>

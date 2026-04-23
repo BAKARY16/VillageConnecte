@@ -1,6 +1,6 @@
 # Village Connecte - Admin Frontend
 
-Interface React admin connectee a l'API backend (plus de donnees mockees pour l'etat principal).
+Interface React admin connectee a l'API backend avec des donnees reelles.
 
 ## Demarrage
 
@@ -14,10 +14,9 @@ Le dossier `admin` garde son propre `.env`, mais l'API est resolue automatiqueme
 
 `npm start` et `npm run build` utilisent la meme logique d'API.
 
-## Auth de demo (seed backend)
+## Authentification
 
-- Identifiant: `admin`
-- Mot de passe: `admin123`
+Utiliser un compte administrateur existant en base (creee en exploitation reelle ou via un seed manuel de test).
 
 ## Flux API consommes
 

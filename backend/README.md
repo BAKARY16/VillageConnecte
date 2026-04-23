@@ -53,7 +53,7 @@ village-connecte-backend/
 │       └── portal.api.js      ← Service pour le portail captif
 ├── scripts/
 │   ├── init.sql               ← Schéma MySQL complet (13 tables, 5 vues)
-│   └── seed.js                ← Données initiales (bornes, agents, 200 vouchers)
+│   └── seed.js                ← Seed manuel de test (optionnel)
 ├── docker-compose.yml
 ├── Dockerfile
 └── .env.example
@@ -99,6 +99,8 @@ docker compose ps
 docker compose exec api node scripts/seed.js
 ```
 
+Le seed n'est plus lance automatiquement au demarrage de l'API.
+
 ### Accéder au shell MySQL
 ```bash
 docker compose exec mysql mysql -u vc_user -pvc_secure_pass_2026 village_connecte
@@ -108,6 +110,21 @@ docker compose exec mysql mysql -u vc_user -pvc_secure_pass_2026 village_connect
 ```bash
 docker compose up --build -d api
 ```
+
+### Configuration MikroTik
+
+Quand vous utilisez Docker Compose, le service `api` doit recevoir les variables MikroTik pour pouvoir parler au routeur RouterOS:
+
+```env
+MIKROTIK_ENABLED=true
+MIKROTIK_HOST=192.168.88.1
+MIKROTIK_USER=api-user
+MIKROTIK_PASSWORD=MdPSuperSecurise
+MIKROTIK_PORT=8728
+SESSION_EXPIRY_CHECK_MS=30000
+```
+
+Le portail captif appelle ensuite le backend, et le backend envoie les ordres MikroTik lors de l'activation d'un voucher ou d'une session, puis coupe la session à l'expiration.
 
 ---
 

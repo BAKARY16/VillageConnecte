@@ -314,12 +314,14 @@ function MetaLine({ label, value, valueColor }) {
 
 function VoucherActions({ voucher, onReactivate, onDelete, compact = false }) {
   const isExpired = voucher.statut === 'expiré';
+  const canReactivate = voucher.statut === 'expiré' || voucher.statut === 'utilisé';
 
   if (compact) {
     return (
       <RowActionsMenu
         voucher={voucher}
         isExpired={isExpired}
+        canReactivate={canReactivate}
         onReactivate={onReactivate}
         onDelete={onDelete}
       />
@@ -328,7 +330,7 @@ function VoucherActions({ voucher, onReactivate, onDelete, compact = false }) {
 
   return (
     <div style={{ display: 'flex', gap: 6, justifyContent: compact ? 'flex-start' : 'flex-end', flexWrap: 'wrap' }}>
-      {isExpired && (
+      {canReactivate && (
         <button
           type="button"
           className="btn btn-secondary btn-sm"
@@ -348,7 +350,7 @@ function VoucherActions({ voucher, onReactivate, onDelete, compact = false }) {
   );
 }
 
-function RowActionsMenu({ voucher, isExpired, onReactivate, onDelete }) {
+function RowActionsMenu({ voucher, isExpired, canReactivate, onReactivate, onDelete }) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
 
@@ -391,7 +393,7 @@ function RowActionsMenu({ voucher, isExpired, onReactivate, onDelete }) {
             padding: 6,
           }}
         >
-          {isExpired ? (
+          {canReactivate ? (
             <>
               <button
                 type="button"

@@ -8,6 +8,7 @@ const {
   generateUniqueCodes,
   generateTransactionRef,
 } = require('../utils/voucher');
+const mikrotik = require('../services/mikrotik');
 
 const router = express.Router();
 
@@ -257,6 +258,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
         JOIN tarifs t ON t.id = v.tarif_id
         LEFT JOIN agents a ON a.id = v.agent_id
         ORDER BY v.created_at DESC
+        LIMIT 500
       `),
       query(`
         SELECT
@@ -274,6 +276,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
         LEFT JOIN agents a ON a.id = t.agent_id
         LEFT JOIN vouchers v ON v.id = t.voucher_id
         ORDER BY t.created_at DESC
+        LIMIT 500
       `),
       query(`
         SELECT
@@ -296,7 +299,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
         WHERE s.statut = 'active' AND s.expires_at > NOW()
         ORDER BY s.started_at DESC
       `),
-      query('SELECT * FROM alertes ORDER BY created_at DESC'),
+      query('SELECT * FROM alertes ORDER BY created_at DESC LIMIT 200'),
       query('SELECT id, nom, slug, prix_fcfa, duree_heures, vitesse_mbps FROM tarifs WHERE actif=1 ORDER BY prix_fcfa ASC'),
       query('SELECT nom, valeur FROM parametres_reseau'),
       query('SELECT nom, valeur FROM parametres_branding'),
@@ -817,12 +820,79 @@ router.post('/alertes/:id/resolve', requireAuth, async (req, res) => {
   }
 });
 
+router.get('/sessions', requireAuth, async (req, res) => {
+  try {
+    const sessionsRows = await query(`
+      SELECT
+        s.id,
+        s.mac_address,
+        s.ip_address,
+        s.borne_id,
+        b.zone AS borne_zone,
+        s.started_at,
+        s.expires_at,
+        s.data_mb_down,
+        s.data_mb_up,
+        TIMESTAMPDIFF(SECOND, NOW(), s.expires_at) AS secondes_restantes,
+        v.code AS voucher_code,
+        t.slug AS tarif_slug
+      FROM sessions_actives s
+      JOIN vouchers v ON v.id = s.voucher_id
+      JOIN tarifs t ON t.id = v.tarif_id
+      LEFT JOIN bornes b ON b.id = s.borne_id
+      WHERE s.statut = 'active' AND s.expires_at > NOW()
+      ORDER BY s.started_at DESC
+    `);
+    const sessions = sessionsRows.map(session => ({
+      id: session.id,
+      mac: session.mac_address,
+      ip: session.ip_address,
+      borneId: session.borne_id,
+      borneZone: session.borne_zone || '-',
+      voucherCode: session.voucher_code,
+      typePass: session.tarif_slug,
+      heureConnexion: session.started_at,
+      dureeRestante: Math.max(0, toNum(session.secondes_restantes)),
+      debitDown: averageMbpsFromSession(session.data_mb_down, session.data_mb_up, session.started_at),
+      debitUp: 0,
+      dataDown: Number(toNum(session.data_mb_down).toFixed(3)),
+      dataUp: Number(toNum(session.data_mb_up).toFixed(3)),
+      dataTotal: Number((toNum(session.data_mb_down) + toNum(session.data_mb_up)).toFixed(3)),
+    }));
+    return res.json({ success: true, sessions });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Chargement sessions impossible' });
+  }
+});
+
 router.post('/sessions/:id/disconnect', requireAuth, async (req, res) => {
   try {
+    // Récupérer le code voucher pour pouvoir kicker l'utilisateur MikroTik
+    const session = await queryOne(
+      `SELECT s.mac_address, v.code
+       FROM sessions_actives s
+       LEFT JOIN vouchers v ON v.id = s.voucher_id
+       WHERE s.id = ? LIMIT 1`,
+      [req.params.id],
+    );
+
     await query(
       "UPDATE sessions_actives SET statut='forcee', last_seen_at=NOW() WHERE id=?",
       [req.params.id],
     );
+
+    // Déconnecter de MikroTik (non bloquant si MikroTik indisponible)
+    if (process.env.MIKROTIK_ENABLED === 'true' && session) {
+      setImmediate(async () => {
+        try {
+          if (session.code) await mikrotik.disconnectUserByUsername(session.code);
+          if (session.mac_address) await mikrotik.disconnectUserByMac(session.mac_address);
+        } catch (err) {
+          console.warn('Admin disconnect MikroTik:', err.message);
+        }
+      });
+    }
+
     return res.json({ success: true });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Deconnexion impossible' });
@@ -872,6 +942,25 @@ router.post('/vouchers/generate', requireAuth, async (req, res) => {
         code,
         type,
         prix: toNum(tarif.prix_fcfa),
+        tarif_slug: tarif.slug,
+        duree_heures: toNum(tarif.duree_heures, 24),
+      });
+    }
+
+    // Synchroniser immédiatement les nouveaux vouchers vers MikroTik.
+    // Les utilisateurs hotspot sont créés MAINTENANT (pas à l'activation),
+    // garantissant que le CHAP fonctionne dès la première saisie du code.
+    if (process.env.MIKROTIK_ENABLED === 'true') {
+      setImmediate(async () => {
+        try {
+          await mikrotik.ensureHotspotProfile(tarif.slug, toNum(tarif.vitesse_mbps, 5));
+          for (const v of created) {
+            await mikrotik.createHotspotUser(v.code, v.tarif_slug, v.duree_heures);
+          }
+          console.log(`✅ MikroTik: ${created.length} users hotspot crees (batch generation)`);
+        } catch (err) {
+          console.warn('⚠️ MikroTik sync generation:', err.message);
+        }
       });
     }
 
@@ -883,6 +972,13 @@ router.post('/vouchers/generate', requireAuth, async (req, res) => {
 
 router.post('/vouchers/:id/reactivate', requireAuth, async (req, res) => {
   try {
+    const voucher = await queryOne(
+      `SELECT v.code, v.mac_utilisateur, t.slug as tarif_slug, t.duree_heures, t.vitesse_mbps
+       FROM vouchers v LEFT JOIN tarifs t ON t.id = v.tarif_id
+       WHERE v.id=?`,
+      [req.params.id]
+    );
+
     const result = await query(
       `UPDATE vouchers
        SET statut='actif',
@@ -898,7 +994,25 @@ router.post('/vouchers/:id/reactivate', requireAuth, async (req, res) => {
 
     if (!result.affectedRows) return res.status(404).json({ error: 'Voucher introuvable' });
 
+    // Terminer les sessions actives en DB
     await query("UPDATE sessions_actives SET statut='terminee' WHERE voucher_id=? AND statut='active'", [req.params.id]);
+
+    if (voucher && process.env.MIKROTIK_ENABLED === 'true') {
+      setImmediate(async () => {
+        try {
+          // 1. Déconnecter la session MikroTik active (si l'utilisateur est connecté)
+          await mikrotik.disconnectUserByUsername(voucher.code);
+          if (voucher.mac_utilisateur) await mikrotik.disconnectUserByMac(voucher.mac_utilisateur);
+          // 2. S'assurer que le profil et l'utilisateur existent pour la prochaine connexion
+          await mikrotik.ensureHotspotProfile(voucher.tarif_slug, toNum(voucher.vitesse_mbps, 5));
+          await mikrotik.createHotspotUser(voucher.code, voucher.tarif_slug, 0); // 0 = pas de limit-uptime (géré par expires_at DB)
+          console.log(`✅ MikroTik: Voucher réactivé: ${voucher.code}`);
+        } catch (err) {
+          console.warn(`⚠️ MikroTik réactivation ${voucher.code}:`, err.message);
+        }
+      });
+    }
+
     return res.json({ success: true });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Reactivation impossible' });

@@ -1,0 +1,19 @@
+{
+  "name": "Village Connecte WiFi",
+  "short_name": "VillageWiFi",
+  "description": "Portail WiFi communautaire de Dioradougou",
+  "start_url": "login.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f6fa",
+  "theme_color": "#55104d",
+  "lang": "fr",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "any",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -20,9 +20,9 @@ function resolveApiBaseUrl() {
 }
 
 const API_BASE = resolveApiBaseUrl();
-const ADMIN_VISIBLE_REFRESH_MS = Number(process.env.REACT_APP_VISIBLE_REFRESH_MS || 5000);
-const ADMIN_HIDDEN_REFRESH_MS = Number(process.env.REACT_APP_HIDDEN_REFRESH_MS || 45000);
-const ADMIN_ERROR_BACKOFF_MAX_MS = Number(process.env.REACT_APP_ERROR_BACKOFF_MAX_MS || 120000);
+const ADMIN_VISIBLE_REFRESH_MS = Number(process.env.REACT_APP_VISIBLE_REFRESH_MS || 60000);
+const ADMIN_HIDDEN_REFRESH_MS = Number(process.env.REACT_APP_HIDDEN_REFRESH_MS || 120000);
+const ADMIN_ERROR_BACKOFF_MAX_MS = Number(process.env.REACT_APP_ERROR_BACKOFF_MAX_MS || 300000);
 const ADMIN_IDLE_TIMEOUT_MS = Number(process.env.REACT_APP_IDLE_TIMEOUT_MS || 10 * 60 * 1000);
 
 const DEFAULT_KPIS = {
@@ -488,6 +488,18 @@ export function AppProvider({ children }) {
     [callAndRefresh],
   );
 
+  const refreshSessions = useCallback(async () => {
+    if (!token) return;
+    try {
+      const data = await apiRequest('/admin/sessions', { token });
+      if (Array.isArray(data.sessions)) {
+        setSessions(data.sessions);
+      }
+    } catch (error) {
+      console.warn('refreshSessions failed:', error.message);
+    }
+  }, [token]);
+
   const generateVouchersForAgent = useCallback(
     async (type, count, agentId, paymentMethod = 'Cash') => {
       if (!type || !count) {
@@ -638,6 +650,7 @@ export function AppProvider({ children }) {
         transactions,
         sessions,
         disconnectSession,
+        refreshSessions,
         alertes,
         resolveAlerte,
         kpis,

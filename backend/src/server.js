@@ -13,6 +13,8 @@ const authRoutes           = require('./routes/auth');
 const voucherRoutes        = require('./routes/vouchers');
 const adminRoutes          = require('./routes/admin');
 const captiveRoutes        = require('./routes/captive');
+const mikrotikRoutes       = require('./routes/mikrotik');
+const sessionExpirationManager = require('./services/session-expiration');
 const {
   dashboardRouter,
   bornesRouter,
@@ -52,6 +54,24 @@ app.use(cors({
     if (allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
       return callback(null, true);
     }
+    if (origin === 'null') return callback(null, true);
+
+    try {
+      const parsedOrigin = new URL(origin);
+      const host = parsedOrigin.hostname.toLowerCase();
+      const privateNetwork =
+        host === 'localhost' ||
+        host === '127.0.0.1' ||
+        host === '::1' ||
+        /^10\./.test(host) ||
+        /^192\.168\./.test(host) ||
+        /^172\.(1[6-9]|2\d|3[0-1])\./.test(host);
+
+      if (privateNetwork) return callback(null, true);
+    } catch (error) {
+      // Ignore malformed origins and fall through to the default rejection.
+    }
+
     callback(new Error(`Origin ${origin} non autorisée.`));
   },
   credentials:  true,
@@ -134,24 +154,31 @@ app.use('/api/sessions',     sessionsRouter);
 app.use('/api/transactions', transactionsRouter);
 app.use('/api/alertes',      alertesRouter);
 app.use('/api/tarifs',       tarifsRouter);
+app.use('/api/mikrotik',     mikrotikRoutes);
 app.use('/api/public',       portalReadLimiter);
 app.use('/api/captive/metrics/ingest', metricsIngestLimiter);
 app.use('/api',              captiveRoutes);
 
 // ── Frontends statiques ───────────────────────────────
+const fs = require('fs');
 const ADMIN_PATH   = process.env.ADMIN_PATH   || path.join(__dirname, '../../admin/build');
 const PORTAIL_PATH = process.env.PORTAIL_PATH || path.join(__dirname, '../../portail-captif/build');
 
 // Admin dashboard sur /admin
 app.use('/admin', express.static(ADMIN_PATH));
-app.get('/admin/*', (req, res) => {
-  res.sendFile(path.join(ADMIN_PATH, 'index.html'));
+app.get('/admin/*', (req, res, next) => {
+  const file = path.join(ADMIN_PATH, 'index.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  return res.status(404).json({ error: 'Admin non disponible.' });
 });
 
-// Portail captif sur / (catch-all, priorite basse)
+// Portail captif sur / (catch-all, priorité basse)
+// Le portail captif est uploadé directement sur MikroTik — ce chemin peut ne pas exister.
 app.use(express.static(PORTAIL_PATH));
 app.get('*', (req, res) => {
-  res.sendFile(path.join(PORTAIL_PATH, 'index.html'));
+  const file = path.join(PORTAIL_PATH, 'index.html');
+  if (fs.existsSync(file)) return res.sendFile(file);
+  return res.status(404).json({ status: 'ok', service: 'Village Connecté API', message: 'Portail captif non servi ici — voir MikroTik.' });
 });
 
 // ── Error handler global ───────────────────────────────
@@ -196,6 +223,9 @@ async function start() {
   }
 
   console.log('✅ Database connected');
+
+  // Démarrer le gestionnaire d'expiration des sessions
+  sessionExpirationManager.start();
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 API running on http://0.0.0.0:${PORT}`);

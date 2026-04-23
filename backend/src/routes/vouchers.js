@@ -10,8 +10,7 @@ const {
   isVoucherValid,
   secondesRestantes,
   generateTransactionRef,
-} = require('../utils/voucher');
-
+} = require('../utils/voucher');const mikrotik = require('../services/mikrotik');
 /* ═══════════════════════════════════════════════════════
    ROUTES PORTAIL CAPTIF (sans auth requise)
    ═══════════════════════════════════════════════════════ */
@@ -77,6 +76,10 @@ router.post('/validate', validate(schemas.validateVoucher), async (req, res) => 
           if (!existingSession) {
             await _createSession(voucher, mac, ip_address, borne_id);
           }
+
+          if (ip_address) {
+            await mikrotik.authorizeUser(mac, ip_address, `voucher-${voucher.code}`);
+          }
         }
 
         return res.json({
@@ -136,6 +139,13 @@ router.post('/validate', validate(schemas.validateVoucher), async (req, res) => 
       await _createSession({ ...voucher, expires_at: expiresAt }, mac, ip_address, borne_id);
     }
 
+    // 7. Autoriser sur MikroTik (si MAC et IP disponibles)
+    let mikrotikResult = { success: false, mikrotik: false };
+    if (mac && ip_address) {
+      mikrotikResult = await mikrotik.authorizeUser(mac, ip_address, `voucher-${voucher.code}`);
+      console.log('MikroTik authorization result:', mikrotikResult);
+    }
+
     const secsLeft = secondesRestantes(expiresAt);
 
     return res.json({
@@ -143,6 +153,7 @@ router.post('/validate', validate(schemas.validateVoucher), async (req, res) => 
       reconnection: false,
       message: 'Code activé avec succès. Connexion WiFi autorisée.',
       voucher: _formatVoucherResponse({ ...voucher, expires_at: expiresAt, activated_at: now }, secsLeft),
+      mikrotik: mikrotikResult,
     });
 
   } catch (err) {
@@ -318,6 +329,18 @@ router.post('/generate', requireAuth, validate(schemas.generateVouchers), async 
       params
     );
 
+    // Synchroniser les vouchers générés vers MikroTik (non-bloquant)
+    if (process.env.MIKROTIK_ENABLED === 'true') {
+      const vouchersForMikrotik = created.map(v => ({
+        code: v.code,
+        tarif_slug: tarif.slug,
+        duree_heures: parseFloat(tarif.duree_heures),
+      }));
+      mikrotik.ensureHotspotProfile(tarif.slug, parseFloat(tarif.vitesse_mbps) || 5)
+        .then(() => mikrotik.syncVouchers(vouchersForMikrotik))
+        .catch(err => console.error('MikroTik sync generate error:', err.message));
+    }
+
     return res.status(201).json({
       success: true,
       message: `${quantite} voucher(s) ${tarif_slug}(s) générés avec succès.`,
@@ -336,6 +359,9 @@ router.post('/generate', requireAuth, validate(schemas.generateVouchers), async 
  */
 router.delete('/:id', requireAuth, async (req, res) => {
   try {
+    // Récupérer le code avant révocation pour supprimer le user MikroTik
+    const existing = await queryOne('SELECT code FROM vouchers WHERE id=? AND statut=\'actif\'', [req.params.id]);
+
     const result = await query(
       "UPDATE vouchers SET statut='revoque', updated_at=NOW() WHERE id=? AND statut='actif'",
       [req.params.id]
@@ -343,6 +369,12 @@ router.delete('/:id', requireAuth, async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ success: false, error: 'Voucher introuvable ou non révocable.' });
+    }
+
+    // Supprimer l'utilisateur hotspot MikroTik (non-bloquant)
+    if (process.env.MIKROTIK_ENABLED === 'true' && existing?.code) {
+      mikrotik.deleteHotspotUser(existing.code)
+        .catch(err => console.error('MikroTik delete revoked user error:', err.message));
     }
 
     return res.json({ success: true, message: 'Voucher révoqué.' });

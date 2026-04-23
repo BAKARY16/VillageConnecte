@@ -1,0 +1,88 @@
+﻿<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <link rel="icon" type="image/png" href="logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Deconnexion - Village Connecte</title>
+  <style>
+    :root { --brand: #55104d; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Segoe UI", system-ui, Arial, sans-serif;
+      background: #f4f6fa;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; min-height: 100dvh;
+    }
+    .card {
+      background: #fff; border-radius: 18px;
+      padding: clamp(24px, 6vw, 36px) clamp(20px, 5vw, 32px);
+      text-align: center; width: 90%; max-width: 320px;
+      box-shadow: 0 8px 28px rgba(85,16,77,0.12);
+    }
+    .icon { font-size: clamp(1.8rem, 6vw, 2.6rem); margin-bottom: 14px; display: block; }
+    h1 { font-size: clamp(1rem, 3vw, 1.15rem); color: var(--brand); margin-bottom: 8px; font-weight: 700; }
+    p  { font-size: clamp(0.78rem, 2vw, 0.85rem); color: #707b8f; line-height: 1.5; }
+    .spinner {
+      width: 28px; height: 28px;
+      border: 3px solid rgba(85,16,77,0.15);
+      border-top-color: var(--brand);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 16px auto 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <span class="icon">&#x2705;</span>
+    <h1>Session terminee</h1>
+    <p>Deconnexion reussie.<br>Redirection en cours...</p>
+    <div class="spinner"></div>
+  </div>
+
+  <!-- MikroTik injecte le code voucher (username) et le lien de login -->
+  <input type="hidden" id="mt-username"   value="$(username)">
+  <input type="hidden" id="mt-link-login" value="$(link-login)">
+
+  <script>
+    function cleanValue(v) {
+      var t = String(v || '').trim();
+      return (!t || t.indexOf('$(') === 0) ? '' : t;
+    }
+    function lsGet(k)    { try { return localStorage.getItem(k) || ''; }  catch(e) { return ''; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); }            catch(e) {} }
+    function lsRemove(k) { try { localStorage.removeItem(k); }            catch(e) {} }
+
+    // Lire le code : $(username) injecte par MikroTik en priorite, sinon localStorage
+    var code = cleanValue(document.getElementById('mt-username').value)
+               || lsGet('vc_last_code');
+    if (code) code = code.trim().toUpperCase();
+
+    // Nettoyer les flags de session (conserver vc_last_code)
+    lsRemove('vc_disconnecting');
+    lsRemove('vc_last_session_id');
+
+    // Rafraichir localStorage avec le code trouve
+    if (code) lsSet('vc_last_code', code);
+
+    // Rediriger en HTTP ABSOLU (evite l'upgrade HTTPS des navigateurs PC)
+    // Mobile: reconnect.html ; Grand ecran (PC/tablette): reconnect-desktop.html
+    // Le code est passe dans l'URL pour survivre meme si localStorage est vide (iOS CNA)
+    var host = window.location.hostname;
+    var isLargeScreen = false;
+    try { isLargeScreen = window.matchMedia('(min-width: 768px)').matches; } catch (e) {}
+
+    var reconnectPath = isLargeScreen ? '/reconnect-desktop.html' : '/reconnect.html';
+    var reconnectUrl = 'http://' + host + reconnectPath;
+    if (code) reconnectUrl += '?code=' + encodeURIComponent(code);
+
+    setTimeout(function () {
+      window.location.replace(reconnectUrl);
+    }, 600);
+  </script>
+</body>
+</html>

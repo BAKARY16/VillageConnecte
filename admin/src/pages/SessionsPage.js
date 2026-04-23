@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Radio } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Radio, RefreshCw } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import ConfirmDialog from '../components/ui/ConfirmDialog';
 
@@ -10,14 +10,63 @@ function formatDuration(seconds) {
 }
 
 export default function SessionsPage() {
-  const { sessions, disconnectSession } = useApp();
+  const { sessions, disconnectSession, refreshSessions } = useApp();
   const [confirmDisconnect, setConfirmDisconnect] = useState(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(null);
+  const connectedDevices = new Set(
+    (sessions || []).map((s) => s.mac || s.ip || s.id)
+  ).size;
+
+  // Auto-refresh toutes les 30 secondes
+  useEffect(() => {
+    let mounted = true;
+
+    const doRefresh = async () => {
+      if (!mounted) return;
+      await refreshSessions?.();
+      if (mounted) setLastRefresh(new Date());
+    };
+
+    doRefresh();
+    const interval = setInterval(doRefresh, 30000);
+    return () => { mounted = false; clearInterval(interval); };
+  }, [refreshSessions]);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    await refreshSessions?.();
+    setLastRefresh(new Date());
+    setIsRefreshing(false);
+  };
 
   return (
     <div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Sessions actives</h2>
+          <div style={{ fontSize: '0.8rem', color: 'var(--brand-primary)', fontWeight: 600, marginTop: 2 }}>
+            {connectedDevices} appareil{connectedDevices > 1 ? 's' : ''} connecte{connectedDevices > 1 ? 's' : ''}
+          </div>
+          {lastRefresh && (
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+              Mis à jour : {lastRefresh.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={handleManualRefresh}
+          disabled={isRefreshing}
+          style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', border: '1px solid var(--border-subtle)', borderRadius: 8, background: 'var(--bg-card)', cursor: isRefreshing ? 'wait' : 'pointer', fontSize: '0.8rem', fontWeight: 600, color: 'var(--brand-primary)' }}
+        >
+          <RefreshCw size={14} style={{ animation: isRefreshing ? 'spin 0.7s linear infinite' : 'none' }} />
+          {isRefreshing ? 'Actualisation...' : 'Actualiser'}
+        </button>
+      </div>
+
       <div className="grid grid-3 mb-6">
         {[
-          { label: 'Sessions actives', value: sessions.length, color: 'var(--text-secondary)' },
+          { label: 'Appareils connectes', value: connectedDevices, color: 'var(--text-secondary)' },
           { label: 'Débit moyen (toutes sessions)', value: `${sessions.reduce((s, sess) => s + (sess.debitDown || 0), 0).toFixed(2)} Mbps`, color: 'var(--text-secondary)' },
           { label: 'Data totale transférée', value: `${sessions.reduce((s, sess) => s + (sess.dataTotal || 0), 0).toFixed(1)} MB`, color: 'var(--brand-secondary)' },
         ].map((s, i) => (

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Village Connecte - Connexion etablie</title>
+  <script>
+    (function () {
+      // MikroTik sert cette page quand la redirection post-login n'a pas de dst defini.
+      // $(link-orig) contient l'URL que l'appareil tentait d'acceder AVANT d'etre intercepte.
+      // En y retournant apres authentification, l'OS (Android/iOS/Windows) detecte
+      // que la connexion est active et ferme automatiquement le mini-browser :
+      //   - Android : generate_204 repond maintenant HTTP 204 -> connexion confirmee
+      //   - iOS : captive.apple.com/hotspot-detect.html repond "Success" -> fermeture CNA
+      //   - Windows : msftconnecttest.com repond correctement -> NCSI confirme
+      //
+      // Si $(link-orig) n'est pas disponible (variable non resolue ou vide),
+      // on redirige vers status.html pour afficher les infos de session.
+      var orig = '$(link-orig)';
+      var isTemplate = !orig || orig.indexOf('$(') !== -1 || orig.trim() === '';
+      window.location.replace(isTemplate ? 'status.html' : orig);
+    })();
+  </script>
+</head>
+<body style="font-family:sans-serif;text-align:center;padding:40px;color:#55104d;">
+  Connexion etablie. Redirection en cours...
+</body>
+</html>

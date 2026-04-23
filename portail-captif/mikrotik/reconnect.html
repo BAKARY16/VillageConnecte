@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <link rel="icon" type="image/png" href="logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Reconnexion - Village Connecte</title>
+  <style>
+    :root {
+      --brand-primary:   #55104d;
+      --brand-dark:      #3d0b38;
+      --brand-secondary: #f29a07;
+      --brand-success:   #16a34a;
+      --bg-base:         #f4f6fa;
+      --bg-card:         #fffdfd;
+      --bg-elevated:     #f1ecf7;
+      --bg-soft:         #f9f7fc;
+      --text-primary:    #2a1833;
+      --text-secondary:  #55104d;
+      --text-muted:      #707b8f;
+      --border-subtle:   rgba(85,16,77,0.06);
+      --shadow-lg:       0 8px 32px rgba(85,16,77,0.12);
+      --radius-xl:       24px;
+      --radius-lg:       16px;
+      --radius-md:       10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
+      color: var(--text-primary);
+      background: var(--bg-base);
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Fond avec image + overlay (identique à login.html) ── */
+    .portal-root {
+      min-height: 100vh;
+      min-height: 100dvh;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .portal-root::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url("backgrounds.jpg") no-repeat center center / cover;
+      opacity: 0.95;
+      filter: blur(4px);
+      z-index: 0;
+    }
+
+    .portal-root::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(244,246,250,0.2), rgba(244,246,250,0.8));
+      z-index: 0;
+    }
+
+    .portal-root > * { position: relative; z-index: 1; }
+
+    /* ── Header (identique à login.html) ────────────────────── */
+    .portal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      animation: fadeInDown 0.35s ease both;
+    }
+
+    .portal-logo { display: flex; align-items: center; gap: 10px; }
+    .portal-logo img { width: 55px; height: 42px; border-radius: 6px; object-fit: contain; }
+    .portal-logo-title { font-size: 14px; font-weight: 700; color: var(--brand-primary); line-height: 1.2; }
+    .portal-logo-sub   { font-size: 10px; color: var(--text-muted); line-height: 1.2; }
+
+    .network-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(220,38,38,0.35);
+      color: #dc2626;
+      background: rgba(220,38,38,0.08);
+      border-radius: 999px;
+      padding: 5px 14px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .network-status::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #dc2626;
+      flex-shrink: 0;
+    }
+
+    /* ── Zone principale ─────────────────────────────────────── */
+    .portal-main {
+      flex: 1;
+      padding: clamp(20px, 5vw, 48px) clamp(12px, 4vw, 24px) 48px;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+    }
+
+    .portal-container {
+      width: 100%;
+      max-width: 480px;
+      animation: fadeInUp 0.45s ease both;
+    }
+
+    /* ── Intro ───────────────────────────────────────────────── */
+    .intro {
+      text-align: center;
+      margin-bottom: clamp(16px, 3vw, 24px);
+    }
+
+    .intro .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(220,38,38,0.1);
+      border: 1px solid rgba(220,38,38,0.2);
+      color: #dc2626;
+      border-radius: 999px;
+      padding: 4px 14px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+
+    .intro h1 {
+      font-size: clamp(1.3rem, 4vw, 1.7rem);
+      font-weight: 800;
+      color: var(--brand-primary);
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      margin-bottom: 6px;
+    }
+
+    .intro p {
+      font-size: clamp(0.8rem, 2vw, 0.88rem);
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── Carte ───────────────────────────────────────────────── */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+      overflow: hidden;
+      animation: fadeInUp 0.45s ease both;
+      animation-delay: 0.05s;
+    }
+
+    .card-header {
+      background: var(--bg-elevated);
+      padding: clamp(16px, 3vw, 22px) clamp(20px, 4vw, 28px);
+      border-bottom: 1px solid var(--border-subtle);
+      text-align: center;
+    }
+
+    .card-header .session-icon {
+      font-size: clamp(1.8rem, 5vw, 2.4rem);
+      display: block;
+      margin-bottom: 6px;
+    }
+
+    .card-header h2 {
+      font-size: clamp(0.95rem, 2.5vw, 1.1rem);
+      font-weight: 700;
+      color: var(--brand-primary);
+      margin-bottom: 2px;
+    }
+
+    .card-header p {
+      font-size: clamp(0.75rem, 1.8vw, 0.82rem);
+      color: var(--text-muted);
+    }
+
+    .card-body {
+      padding: clamp(20px, 4vw, 32px) clamp(20px, 4vw, 28px);
+    }
+
+    /* ── Bloc code mémorisé ──────────────────────────────────── */
+    .saved-code-block {
+      display: none;
+      background: rgba(22,163,74,0.07);
+      border: 1px solid rgba(22,163,74,0.25);
+      border-radius: var(--radius-lg);
+      padding: clamp(12px, 2.5vw, 18px) clamp(14px, 3vw, 20px);
+      margin-bottom: clamp(16px, 3vw, 24px);
+      text-align: center;
+    }
+
+    .saved-code-label {
+      font-size: clamp(0.72rem, 1.6vw, 0.78rem);
+      font-weight: 600;
+      color: #166534;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .saved-code-val {
+      font-family: 'Courier New', 'Lucida Console', monospace;
+      font-size: clamp(1.2rem, 4vw, 1.5rem);
+      font-weight: 800;
+      color: var(--brand-primary);
+      letter-spacing: 0.14em;
+    }
+
+    /* ── Séparateur avec texte ───────────────────────────────── */
+    .divider-text {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: clamp(16px, 3vw, 22px) 0;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .divider-text::before,
+    .divider-text::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(85,16,77,0.1);
+    }
+
+    /* ── Boutons ─────────────────────────────────────────────── */
+    .btn {
+      width: 100%;
+      min-height: clamp(50px, 8vw, 62px);
+      padding: clamp(12px, 2.5vw, 16px) clamp(16px, 3vw, 22px);
+      border: none;
+      border-radius: var(--radius-lg);
+      font-size: clamp(0.85rem, 2vw, 0.95rem);
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(8px, 1.5vw, 12px);
+      transition: background 0.18s, opacity 0.15s, transform 0.1s, box-shadow 0.18s;
+      -webkit-tap-highlight-color: transparent;
+      touch-action: manipulation;
+      text-decoration: none;
+    }
+
+    .btn:active:not(:disabled) {
+      transform: scale(0.98);
+      opacity: 0.88;
+    }
+
+    .btn-primary {
+      background: var(--brand-primary);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(85,16,77,0.28);
+      margin-bottom: clamp(10px, 2vw, 14px);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--brand-dark);
+      box-shadow: 0 6px 20px rgba(85,16,77,0.35);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-outline {
+      background: #fff;
+      color: var(--brand-primary);
+      border: 2px solid rgba(85,16,77,0.25);
+    }
+
+    .btn-outline:hover {
+      background: var(--bg-soft);
+      border-color: var(--brand-primary);
+    }
+
+    .btn-icon { font-size: clamp(1rem, 2.5vw, 1.2rem); flex-shrink: 0; }
+
+    .btn-text-wrap { display: flex; flex-direction: column; align-items: flex-start; }
+    .btn-label { line-height: 1.2; }
+    .btn-sub {
+      font-size: clamp(0.65rem, 1.4vw, 0.73rem);
+      font-weight: 400;
+      opacity: 0.7;
+      line-height: 1.3;
+      margin-top: 2px;
+    }
+
+    /* ── Note de bas de carte ────────────────────────────────── */
+    .card-footer-note {
+      margin-top: clamp(16px, 3vw, 22px);
+      padding-top: clamp(12px, 2vw, 16px);
+      border-top: 1px solid rgba(85,16,77,0.06);
+      font-size: clamp(0.68rem, 1.4vw, 0.75rem);
+      color: var(--text-muted);
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    /* ── Animations ──────────────────────────────────────────── */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 360px) {
+      .portal-logo-title, .portal-logo-sub { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <!-- MikroTik injecte $(link-login) après fermeture de session -->
+  <input type="hidden" id="mt-link-login" value="$(link-login)">
+
+  <div class="portal-root">
+
+    <header class="portal-header">
+      <div class="portal-logo">
+        <img src="logo.png" alt="Village Connecte">
+        <div>
+          <div class="portal-logo-title">Village Connecte</div>
+          <div class="portal-logo-sub">Dioradougou</div>
+        </div>
+      </div>
+      <div class="network-status">
+        <span>Session terminee</span>
+      </div>
+    </header>
+
+    <main class="portal-main">
+      <div class="portal-container">
+
+        <div class="intro">
+          <div class="badge">🔒 Deconnecte</div>
+          <h1>Votre session est terminee</h1>
+          <p>Choisissez comment continuer ci-dessous</p>
+        </div>
+
+        <section class="card">
+          <div class="card-header">
+            <span class="session-icon">📶</span>
+            <h2>Que souhaitez-vous faire ?</h2>
+            <p>Reconnectez-vous ou utilisez un autre code</p>
+          </div>
+
+          <div class="card-body">
+
+            <!-- Affiché uniquement si un code est mémorisé -->
+            <div class="saved-code-block" id="saved-code-block">
+              <div class="saved-code-label">Code memorise</div>
+              <div class="saved-code-val" id="saved-code-val"></div>
+            </div>
+
+            <!-- Bouton 1 : reconnexion avec le même code -->
+            <button class="btn btn-primary" id="btn-reconnect" disabled>
+              <span class="btn-icon">&#x21BA;</span>
+              <span class="btn-text-wrap">
+                <span class="btn-label">Se reconnecter</span>
+                <span class="btn-sub" id="hint-reconnect">Aucun code memorise</span>
+              </span>
+            </button>
+
+            <div class="divider-text">ou</div>
+
+            <!-- Bouton 2 : autre code ou achat -->
+            <button class="btn btn-outline" id="btn-new">
+              <span class="btn-icon">&#x2B;</span>
+              <span class="btn-text-wrap">
+                <span class="btn-label">Autre code ou Acheter</span>
+                <span class="btn-sub">Saisir un nouveau code ou acheter un forfait</span>
+              </span>
+            </button>
+
+            <p class="card-footer-note">
+              Besoin d'aide ? Contactez un agent local ou rendez-vous a une borne WiFi.
+            </p>
+
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Formulaire de login MikroTik (identique a login.html) -->
+  <form id="sendin" action="$(link-login-only)" method="post" style="display:none;">
+    <input type="hidden" name="username">
+    <input type="hidden" name="password">
+    <input type="hidden" name="dst" value="">
+    <input type="hidden" name="popup" value="false">
+  </form>
+
+  <!-- Variables MikroTik injectees -->
+  <input type="hidden" id="mt-mac"         value="$(mac)">
+  <input type="hidden" id="mt-ip"          value="$(ip)">
+  <input type="hidden" id="mt-server-name" value="$(server-name)">
+
+  <script>
+    function cleanValue(v) {
+      var t = String(v || '').trim();
+      return (!t || t.indexOf('$(') === 0) ? '' : t;
+    }
+    function lsGet(k)    { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); }          catch(e) {} }
+    function lsRemove(k) { try { localStorage.removeItem(k); }          catch(e) {} }
+    function getQuery(n) { try { return new URLSearchParams(window.location.search).get(n) || ''; } catch(e) { return ''; } }
+
+    // Variables MikroTik
+    var clientMac = cleanValue(document.getElementById('mt-mac').value);
+    var clientIp  = cleanValue(document.getElementById('mt-ip').value);
+    var borneId   = cleanValue(document.getElementById('mt-server-name').value) || 'B08';
+
+    // API backend
+    var VC_API_BASE = 'http://192.168.1.128:3001';
+
+    function apiFetch(url, opts) {
+      return fetch(url, opts).catch(function () {
+        var alt = url.startsWith('https:') ? url.replace('https:', 'http:') : url.replace('http:', 'https:');
+        return fetch(alt, opts);
+      });
+    }
+
+    // Construire l'URL de destination après login MikroTik
+    function getStatusUrl(code) {
+      try {
+        var action = document.getElementById('sendin').action;
+        if (action && action.indexOf('http') === 0) {
+          return new URL(action).origin + '/status.html?code=' + encodeURIComponent(code);
+        }
+      } catch(e) {}
+      return 'http://' + window.location.hostname + '/status.html?code=' + encodeURIComponent(code);
+    }
+
+    // Soumettre le formulaire MikroTik (authentification réelle)
+    function submitToMikrotik(code) {
+      var form = document.getElementById('sendin');
+      var rawAction = (form.getAttribute('action') || '').trim();
+      
+      // Corriger l'action du form si MikroTik n'a pas injecté $(link-login-only)
+      // Cela arrive sur PC/tablette qui ne passent pas par le CNA
+      if (!form.action || rawAction.indexOf('$(') !== -1 || form.action.indexOf('$(') !== -1) {
+        form.action = 'http://' + window.location.hostname + '/login';
+      }
+      
+      form.username.value = code;
+      form.password.value = code;
+      form.querySelector('[name="dst"]').value = getStatusUrl(code);
+      form.submit();
+    }
+
+    // Appel API /activate puis soumission MikroTik
+    async function activateAndConnect(code) {
+      var btn = document.getElementById('btn-reconnect');
+      btn.disabled  = true;
+      btn.innerHTML = '<span class="btn-icon">&#x23F3;</span><span>Connexion en cours...</span>';
+
+      lsSet('vc_last_code', code);
+      lsRemove('vc_disconnecting');
+
+      try {
+        var resp = await apiFetch(VC_API_BASE + '/api/captive/sessions/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code: code, mac: clientMac || undefined, ip_address: clientIp || undefined, borneId: borneId || undefined }),
+          credentials: 'omit',
+        });
+        var result = await resp.json();
+        if (!resp.ok || result.ok === false) {
+          btn.disabled  = false;
+          btn.innerHTML = '<span class="btn-icon">&#x21BA;</span>'
+            + '<span class="btn-text-wrap"><span class="btn-label">Se reconnecter</span>'
+            + '<span class="btn-sub" style="color:#dc2626;opacity:1;">' + (result.error || 'Code invalide ou expire') + '</span></span>';
+          return;
+        }
+        var sid = result.session && result.session.id;
+        if (sid) lsSet('vc_last_session_id', sid);
+      } catch(e) {
+        // Erreur réseau non bloquante : MikroTik décidera
+        console.warn('activate (non bloquant):', e.message);
+      }
+
+      submitToMikrotik(code);
+    }
+
+    // ── Initialisation ──────────────────────────────────────────
+    lsRemove('vc_disconnecting');
+    lsRemove('vc_last_session_id');
+
+    // Code : ?code= dans l'URL (passé par logout.html) ou localStorage
+    var savedCode = (getQuery('code') || lsGet('vc_last_code')).replace(/\s/g, '').toUpperCase();
+    if (savedCode) lsSet('vc_last_code', savedCode);
+
+    var btnReconnect  = document.getElementById('btn-reconnect');
+    var btnNew        = document.getElementById('btn-new');
+    var savedBlock    = document.getElementById('saved-code-block');
+    var savedVal      = document.getElementById('saved-code-val');
+    var hintReconnect = document.getElementById('hint-reconnect');
+
+    if (savedCode) {
+      savedBlock.style.display  = 'block';
+      savedVal.textContent      = savedCode.length > 4 ? savedCode.substr(0,4) + ' ' + savedCode.substr(4) : savedCode;
+      hintReconnect.textContent = 'Code : ' + (savedCode.length > 4 ? savedCode.substr(0,4) + ' ' + savedCode.substr(4) : savedCode);
+      btnReconnect.disabled     = false;
+    }
+
+    // Bouton 1 : connexion directe sans passer par login.html
+    btnReconnect.addEventListener('click', function () {
+      if (!savedCode) return;
+      activateAndConnect(savedCode);
+    });
+
+    // Bouton 2 : nouveau code → page login vierge
+    var loginUrl = cleanValue(document.getElementById('mt-link-login').value)
+                   || ('http://' + window.location.hostname + '/login');
+    btnNew.addEventListener('click', function () {
+      lsRemove('vc_last_code');
+      window.location.replace(loginUrl);
+    });
+  </script>
+</body>
+</html>
