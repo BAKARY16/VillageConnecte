@@ -22,26 +22,82 @@
       text-align: center; width: 90%; max-width: 320px;
       box-shadow: 0 8px 28px rgba(85,16,77,0.12);
     }
-    .icon { font-size: clamp(1.8rem, 6vw, 2.6rem); margin-bottom: 14px; display: block; }
+    .icon {
+      width: clamp(32px, 8vw, 44px);
+      height: clamp(32px, 8vw, 44px);
+      margin: 0 auto 14px;
+      display: block;
+      color: #16a34a;
+    }
+
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
     h1 { font-size: clamp(1rem, 3vw, 1.15rem); color: var(--brand); margin-bottom: 8px; font-weight: 700; }
     p  { font-size: clamp(0.78rem, 2vw, 0.85rem); color: #707b8f; line-height: 1.5; }
     .spinner {
-      width: 28px; height: 28px;
-      border: 3px solid rgba(85,16,77,0.15);
-      border-top-color: var(--brand);
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
+      width: 48px;
+      height: 48px;
       margin: 16px auto 0;
+      position: relative;
+      color: var(--brand);
+      animation: spin 1.1s linear infinite;
     }
+
+    .spinner i {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 13px;
+      margin-left: -2px;
+      margin-top: -20px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.16;
+      transform-origin: center 20px;
+    }
+
+    .spinner i:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+    .spinner i:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+    .spinner i:nth-child(3) { transform: rotate(60deg); opacity: 0.84; }
+    .spinner i:nth-child(4) { transform: rotate(90deg); opacity: 0.76; }
+    .spinner i:nth-child(5) { transform: rotate(120deg); opacity: 0.68; }
+    .spinner i:nth-child(6) { transform: rotate(150deg); opacity: 0.6; }
+    .spinner i:nth-child(7) { transform: rotate(180deg); opacity: 0.52; }
+    .spinner i:nth-child(8) { transform: rotate(210deg); opacity: 0.44; }
+    .spinner i:nth-child(9) { transform: rotate(240deg); opacity: 0.36; }
+    .spinner i:nth-child(10) { transform: rotate(270deg); opacity: 0.3; }
+    .spinner i:nth-child(11) { transform: rotate(300deg); opacity: 0.24; }
+    .spinner i:nth-child(12) { transform: rotate(330deg); opacity: 0.2; }
+
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === Compat anciens navigateurs (Chrome < 79, Android 6) === */
+    @supports not (width: min(1px, 1px)) {
+      .card { padding: 24px 20px; }
+      .icon { width: 32px; height: 32px; }
+      h1 { font-size: 1rem; }
+      p { font-size: 0.78rem; }
+    }
   </style>
 </head>
 <body>
   <div class="card">
-    <span class="icon">&#x2705;</span>
+    <span class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+    </span>
     <h1>Session terminee</h1>
     <p>Deconnexion reussie.<br>Redirection en cours...</p>
-    <div class="spinner"></div>
+    <div class="spinner" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
   </div>
 
   <!-- MikroTik injecte le code voucher (username) et le lien de login -->

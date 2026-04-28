@@ -222,26 +222,65 @@ class MikroTikManager {
 
   // ── Gestion utilisateurs hotspot ──────────────────────────────────────────
 
-  async createHotspotUser(code, slug = 'default', dureeHeures = 0) {
+  async createHotspotUser(code, slug = 'default', dureeHeures = 0, options = {}) {
     if (!this.enabled) return { success: true, mikrotik: false, message: 'MikroTik désactivé' };
     try {
       return await this.withConnection(async (conn) => {
         const upperCode = String(code).toUpperCase();
         const profileName = slug && slug !== 'default' ? `vc-${slug}` : 'default';
+        const upsert = options && options.upsert !== false;
+
+        const buildProfileName = (profile) => (profile && profile !== 'default' ? `vc-${profile}` : 'default');
+        const buildLimitUptime = (hours) => {
+          if (!(hours > 0)) return '';
+          let h = Math.floor(hours);
+          let m = Math.round((hours - h) * 60);
+          if (m >= 60) {
+            h += Math.floor(m / 60);
+            m = m % 60;
+          }
+          return `${h}h${m}m0s`;
+        };
+
+        const applyUserSettings = async (userId, profile) => {
+          const params = [
+            `=.id=${userId}`,
+            `=password=${upperCode}`,
+            '=disabled=no',
+            `=profile=${buildProfileName(profile)}`,
+          ];
+          const uptime = buildLimitUptime(dureeHeures);
+          // Une valeur vide retire la contrainte limit-uptime si nécessaire.
+          params.push(`=limit-uptime=${uptime}`);
+          await conn.write('/ip/hotspot/user/set', params);
+        };
 
         const existing = await conn.write('/ip/hotspot/user/print', [`?name=${upperCode}`]);
         if (existing && existing.length > 0) {
-          console.log(`ℹ️ MikroTik: Utilisateur déjà existant: ${upperCode}`);
-          return { success: true, mikrotik: true, created: false };
+          if (!upsert) {
+            console.log(`ℹ️ MikroTik: Utilisateur déjà existant: ${upperCode}`);
+            return { success: true, mikrotik: true, created: false, updated: false };
+          }
+
+          try {
+            await applyUserSettings(existing[0]['.id'], slug);
+          } catch (profileErr) {
+            if (String(profileErr.message).includes('does not match any value of profile')) {
+              console.warn(`⚠️ Profil '${buildProfileName(slug)}' introuvable, fallback 'default' pour ${upperCode}`);
+              await applyUserSettings(existing[0]['.id'], 'default');
+            } else {
+              throw profileErr;
+            }
+          }
+
+          console.log(`🔄 MikroTik: Utilisateur mis à jour: ${upperCode} (profil: ${buildProfileName(slug)})`);
+          return { success: true, mikrotik: true, created: false, updated: true };
         }
 
         const buildParams = (profile) => {
           const p = [`=name=${upperCode}`, `=password=${upperCode}`, `=profile=${profile}`];
-          if (dureeHeures > 0) {
-            const h = Math.floor(dureeHeures);
-            const m = Math.round((dureeHeures - h) * 60);
-            p.push(`=limit-uptime=${h}h${m}m0s`);
-          }
+          const uptime = buildLimitUptime(dureeHeures);
+          if (uptime) p.push(`=limit-uptime=${uptime}`);
           return p;
         };
 
@@ -257,7 +296,7 @@ class MikroTikManager {
             throw profileErr;
           }
         }
-        return { success: true, mikrotik: true, created: true };
+        return { success: true, mikrotik: true, created: true, updated: false };
       });
     } catch (err) {
       console.error(`❌ MikroTik: Erreur création utilisateur ${code}:`, err.message);
@@ -329,25 +368,41 @@ class MikroTikManager {
 
   // ── Sync en lot ───────────────────────────────────────────────────────────
 
-  async syncVouchers(vouchers) {
+  async syncVouchers(vouchers, options = {}) {
     if (!this.enabled) return { success: true, mikrotik: false, synced: 0, errors: 0 };
+    const maxAttempts = Math.max(1, Number(options.maxAttempts) || 2);
+    const upsert = options.upsert !== false;
     let synced = 0;
     let errors = 0;
+    const failedCodes = [];
+
     for (const v of vouchers) {
-      try {
-        const result = await this.createHotspotUser(
-          v.code,
-          v.tarif_slug || 'default',
-          Number(v.duree_heures) || 0,
-        );
-        if (result && result.success) synced++;
-        else errors++;
-      } catch (_err) {
+      let ok = false;
+      let attempt = 0;
+      while (!ok && attempt < maxAttempts) {
+        attempt += 1;
+        try {
+          const result = await this.createHotspotUser(
+            v.code,
+            v.tarif_slug || 'default',
+            Number(v.duree_heures) || 0,
+            { upsert },
+          );
+          ok = Boolean(result && result.success);
+        } catch (_err) {
+          ok = false;
+        }
+      }
+
+      if (ok) {
+        synced++;
+      } else {
         errors++;
+        failedCodes.push(String(v.code || '').toUpperCase());
       }
     }
     console.log(`✅ MikroTik sync: ${synced} traités, ${errors} erreurs`);
-    return { success: true, mikrotik: true, synced, errors };
+    return { success: true, mikrotik: true, synced, errors, failedCodes };
   }
 }
 

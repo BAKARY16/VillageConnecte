@@ -44,6 +44,8 @@ services:
       dockerfile: Dockerfile
     container_name: villageconnecte-backend
     restart: unless-stopped
+    env_file:
+      - ./backend/.env
     depends_on:
       db:
         condition: service_healthy

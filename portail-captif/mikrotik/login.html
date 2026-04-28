@@ -93,7 +93,7 @@
     .portal-root:before {
       content: "";
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: url("backgrounds.jpg") no-repeat center center / cover;
       opacity: 0.95;
       filter: blur(4px);
@@ -103,7 +103,7 @@
     .portal-root:after {
       content: "";
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(180deg, rgba(244, 246, 250, 0.2), rgba(244, 246, 250, 0.8));
       z-index: 0;
     }
@@ -121,6 +121,7 @@
       border-bottom: 1px solid var(--border-subtle);
       /* background: rgba(255, 255, 255, 0.75); */
       backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
       animation: fadeInDown 0.35s ease both;
       position: sticky;
       top: 0;
@@ -689,6 +690,26 @@
       color: var(--text-muted);
     }
 
+    .meta-card-icon {
+      width: 22px;
+      height: 22px;
+      margin: 0 auto 4px;
+      color: var(--brand-accent);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .meta-card-icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
     .error {
       border: 1px solid rgba(220, 38, 38, 0.35);
       background: rgba(220, 38, 38, 0.10);
@@ -776,6 +797,150 @@
       .portal-header { padding: 12px 16px; }
       .plan-grid { grid-template-columns: 1fr; }
       .plan-grid .plan-card:last-child { grid-column: auto; }
+    }
+
+    .vc-loading-overlay {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(22, 16, 26, 0.42);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .vc-loading-overlay.is-visible {
+      display: flex;
+    }
+
+    .vc-loading-card {
+      width: 100%; max-width: 320px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 16px 44px rgba(15, 10, 18, 0.24);
+      border: 1px solid rgba(85, 16, 77, 0.1);
+      padding: 18px 18px 16px;
+      text-align: center;
+      color: var(--brand-primary);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .vc-spinner {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 12px;
+      position: relative;
+      color: var(--brand-primary);
+      animation: vc-spin 1.1s linear infinite;
+    }
+
+    .vc-spinner i {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 14px;
+      margin-left: -2px;
+      margin-top: -22px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.16;
+      transform-origin: center 22px;
+    }
+
+    .vc-spinner i:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+    .vc-spinner i:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+    .vc-spinner i:nth-child(3) { transform: rotate(60deg); opacity: 0.84; }
+    .vc-spinner i:nth-child(4) { transform: rotate(90deg); opacity: 0.76; }
+    .vc-spinner i:nth-child(5) { transform: rotate(120deg); opacity: 0.68; }
+    .vc-spinner i:nth-child(6) { transform: rotate(150deg); opacity: 0.6; }
+    .vc-spinner i:nth-child(7) { transform: rotate(180deg); opacity: 0.52; }
+    .vc-spinner i:nth-child(8) { transform: rotate(210deg); opacity: 0.44; }
+    .vc-spinner i:nth-child(9) { transform: rotate(240deg); opacity: 0.36; }
+    .vc-spinner i:nth-child(10) { transform: rotate(270deg); opacity: 0.3; }
+    .vc-spinner i:nth-child(11) { transform: rotate(300deg); opacity: 0.24; }
+    .vc-spinner i:nth-child(12) { transform: rotate(330deg); opacity: 0.2; }
+
+    @keyframes vc-spin { to { transform: rotate(360deg); } }
+
+    .fedapay-dialog {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      z-index: 998;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+      background: rgba(18, 12, 24, 0.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+
+    .fedapay-dialog.is-visible {
+      display: flex;
+    }
+
+    .fedapay-dialog-card {
+      width: 100%; max-width: 560px;
+      max-height: 88vh; max-height: min(88vh, 760px);
+      background: #fff;
+      border-radius: 24px;
+      box-shadow: 0 24px 60px rgba(15, 10, 18, 0.34);
+      border: 1px solid rgba(85, 16, 77, 0.12);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .fedapay-dialog-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      background: linear-gradient(135deg, rgba(85, 16, 77, 0.08), rgba(245, 158, 11, 0.12));
+      border-bottom: 1px solid rgba(85, 16, 77, 0.08);
+    }
+
+    .fedapay-dialog-title {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--brand-primary);
+    }
+
+    .fedapay-dialog-subtitle {
+      margin: 2px 0 0;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .fedapay-dialog-close {
+      width: 38px;
+      height: 38px;
+      border: none;
+      border-radius: 999px;
+      background: rgba(85, 16, 77, 0.08);
+      color: var(--brand-primary);
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+
+    .fedapay-dialog-body {
+      padding: 14px;
+      overflow: auto;
+      background: #fffaf3;
+    }
+
+    .fedapay-dialog-note {
+      margin: 0 0 10px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.8rem;
     }
   </style>
 
@@ -870,7 +1035,7 @@
             <div id="achat-view" class="view-panel hidden">
               <div class="steps" id="achat-steps"></div>
               <div class="steps-labels" id="achat-steps-labels">
-                <span>Forfait</span><span>Paiement</span><span>Telephone</span><span>Traitement</span><span>Code</span>
+                <span>Forfait</span><span>Paiement</span><span>Redirection</span><span>Traitement</span><span>Code</span>
               </div>
 
               <div id="achat-step-plan" class="achat-step active">
@@ -897,7 +1062,7 @@
 
               <div id="achat-step-method" class="achat-step">
                 <h2 class="voucher-title" style="font-size:22px;">Moyen de paiement</h2>
-                <div class="voucher-sub">Paiement securise via Orange, MTN, Wave ou Moov</div>
+                <div class="voucher-sub">Paiement securise via Orange, MTN, Wave ou Moov (traitement FedaPay)</div>
                 <div id="payment-grid" class="payment-grid">
                   <div class="payment-card active" data-method="Orange Money">
                     <img src="orange.png" alt="Orange Money">
@@ -927,11 +1092,10 @@
                   FCFA
                 </div>
 
-                <div class="field">
-                  <label for="phone">Numero de telephone</label>
-                  <input id="phone" type="tel" maxlength="10" placeholder="07XXXXXXXX">
+                <div class="info-box yellow" style="margin-top:0;margin-bottom:10px;text-align:center;">
+                  Paiement FedaPay embarque: restez sur cette page pour finaliser le checkout.
                 </div>
-                <button id="simulate-payment" class="btn btn-primary" type="button">Payer et generer le code</button>
+                <button id="simulate-payment" class="btn btn-primary" type="button">Ouvrir le checkout FedaPay</button>
                 <button id="back-to-method" class="btn-ghost" type="button">← Changer de methode</button>
                 <div id="achat-feedback" class="hidden"></div>
               </div>
@@ -940,7 +1104,7 @@
                 <div class="status-screen">
                   <div class="spinner"></div>
                   <div class="voucher-title" style="font-size:1.1rem;">Traitement en cours...</div>
-                  <div class="voucher-sub" style="margin-bottom:0;">Veuillez confirmer sur votre telephone si necessaire</div>
+                  <div class="voucher-sub" style="margin-bottom:0;">Finalisation via FedaPay en cours...</div>
                 </div>
               </div>
 
@@ -962,17 +1126,23 @@
 
         <div class="meta-cards">
           <div class="meta-card">
-            <div style="font-size:22px;margin-bottom:4px;color:var(--brand-accent);">↕</div>
+            <div class="meta-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 3v18"></path><path d="m7 8 5-5 5 5"></path><path d="m17 16-5 5-5-5"></path></svg>
+            </div>
             <strong>5 Mbps</strong>
             <span>Debit garanti</span>
           </div>
           <div class="meta-card">
-            <div style="font-size:22px;margin-bottom:4px;color:var(--brand-accent);">✓</div>
+            <div class="meta-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+            </div>
             <strong>Securise</strong>
-            <span>Paiement CinetPay</span>
+            <span>Paiement FedaPay</span>
           </div>
           <div class="meta-card">
-            <div style="font-size:22px;margin-bottom:4px;color:var(--brand-accent);">◉</div>
+            <div class="meta-card-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="M12 2v2"></path><path d="M12 20v2"></path><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="2.5"></circle></svg>
+            </div>
             <strong>Bornes</strong>
             <span>Roaming gratuit</span>
           </div>
@@ -987,6 +1157,31 @@
     </footer>
   </div>
 
+  <div class="vc-loading-overlay" id="vc-loading" aria-hidden="true">
+    <div class="vc-loading-card">
+      <div class="vc-spinner" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div id="vc-loading-text">Traitement en cours...</div>
+    </div>
+  </div>
+
+  <div class="fedapay-dialog" id="fedapay-dialog" aria-hidden="true">
+    <div class="fedapay-dialog-card" role="dialog" aria-modal="true" aria-labelledby="fedapay-dialog-title">
+      <div class="fedapay-dialog-header">
+        <div>
+          <h2 class="fedapay-dialog-title" id="fedapay-dialog-title">Paiement FedaPay</h2>
+          <p class="fedapay-dialog-subtitle">Finalisez votre achat sans quitter la page</p>
+        </div>
+        <button type="button" class="fedapay-dialog-close" id="fedapay-dialog-close" aria-label="Fermer">×</button>
+      </div>
+      <div class="fedapay-dialog-body">
+        <p class="fedapay-dialog-note">Choisissez votre moyen de paiement et confirmez la transaction.</p>
+        <div id="fedapay-embed" style="width:100%;height:460px;max-width:520px;margin:0 auto;border-radius:14px;overflow:hidden;background:#ffffff;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- Formulaire de login MikroTik : username=CODE, password=CODE en texte clair (http-pap) -->
   <form id="sendin" action="$(link-login-only)" method="post" class="hidden">
     <input type="hidden" name="username">
@@ -999,13 +1194,64 @@
   <input id="mt-trial" type="hidden" value="$(trial)">
 
   <script>
-    // Detection du protocole : HTTP par defaut, HTTPS si la page est en HTTPS.
-    window.VC_API_BASE = (function () {
-      var base = 'http://192.168.1.128:3001';
-      if (window.location.protocol === 'https:') return base.replace('http:', 'https:');
-      return base;
+    // Base API configurable: query ?api_base=... / localStorage / fallbacks statiques.
+    (function () {
+      function normalizeApiBase(value) {
+        var text = String(value || '').trim().replace(/\/+$/, '');
+        if (!text) return '';
+        if (/\/api$/i.test(text)) {
+          text = text.replace(/\/api$/i, '');
+        }
+        return text;
+      }
+
+      var fromQuery = '';
+      try {
+        var qs = new URLSearchParams(window.location.search);
+        fromQuery = normalizeApiBase(qs.get('api_base') || qs.get('api') || '');
+      } catch (e) {}
+
+      var fromStorage = '';
+      try {
+        fromStorage = normalizeApiBase(localStorage.getItem('vc_api_base') || '');
+      } catch (e) {}
+
+      var fromHost = '';
+      try {
+        var host = String(window.location.hostname || '').trim();
+        if (host) fromHost = normalizeApiBase('http://' + host + ':3001');
+      } catch (e) {}
+
+      var rawCandidates = [
+        fromQuery,
+        fromStorage,
+        'https://villageconnecte.voisilab.online',
+        fromHost,
+        'http://10.5.50.252:3001',
+        'http://10.5.50.253:3001'
+      ];
+
+      var seen = {};
+      var candidates = [];
+      var i;
+      for (i = 0; i < rawCandidates.length; i++) {
+        var c = normalizeApiBase(rawCandidates[i]);
+        if (!c || seen[c]) continue;
+        seen[c] = true;
+        candidates.push(c);
+      }
+
+      var base = candidates[0] || 'http://10.5.50.252:3001';
+      window.VC_API_BASE = base;
+      window.VC_API_BASES = candidates.length ? candidates : [base];
+
+      if (fromQuery) {
+        try { localStorage.setItem('vc_api_base', base); } catch (e) {}
+      }
     })();
   </script>
+
+  <script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
 
   <script>
     (function () {
@@ -1021,8 +1267,86 @@
         return text;
       }
 
+      var loadingOverlay = document.getElementById('vc-loading');
+      var loadingText = document.getElementById('vc-loading-text');
+
+      function setLoading(message) {
+        if (loadingText) loadingText.textContent = message || 'Traitement en cours...';
+        if (loadingOverlay) {
+          loadingOverlay.classList.add('is-visible');
+          loadingOverlay.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      function clearLoading() {
+        if (!loadingOverlay) return;
+        loadingOverlay.classList.remove('is-visible');
+        loadingOverlay.setAttribute('aria-hidden', 'true');
+      }
+
       function getApiBase() {
-        return window.VC_API_BASE || 'http://192.168.1.128:3001';
+        return window.VC_API_BASE || 'http://10.5.50.252:3001';
+      }
+
+      function getApiBases() {
+        var list = Array.isArray(window.VC_API_BASES) ? window.VC_API_BASES.slice() : [];
+        if (!list.length) list = [getApiBase()];
+        var primary = getApiBase();
+        if (list[0] !== primary) {
+          list = [primary].concat(list.filter(function (item) { return item !== primary; }));
+        }
+        return list;
+      }
+
+      function setApiBase(base) {
+        var normalized = String(base || '').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
+        if (!normalized) return;
+        window.VC_API_BASE = normalized;
+        var current = Array.isArray(window.VC_API_BASES) ? window.VC_API_BASES : [];
+        window.VC_API_BASES = [normalized].concat(current.filter(function (item) { return item !== normalized; }));
+        try { localStorage.setItem('vc_api_base', normalized); } catch (e) {}
+      }
+
+      function routeToReconnectAfterLogoutIfNeeded() {
+        var freshIntent = '';
+        try {
+          var freshQs = new URLSearchParams(window.location.search);
+          freshIntent = String(freshQs.get('fresh') || freshQs.get('new') || freshQs.get('mode') || '').toLowerCase();
+        } catch (e) {}
+
+        // Quand l'utilisateur choisit explicitement "Autre code ou acheter",
+        // on force l'ouverture du login sans redirection automatique.
+        if (freshIntent === '1' || freshIntent === 'true' || freshIntent === 'new') {
+          try { localStorage.removeItem('vc_disconnecting'); } catch (e) {}
+          return false;
+        }
+
+        var disconnecting = '';
+        var savedCode = '';
+        try {
+          disconnecting = localStorage.getItem('vc_disconnecting') || '';
+          savedCode = localStorage.getItem('vc_last_code') || '';
+        } catch (e) {
+          return false;
+        }
+
+        if (disconnecting !== '1') return false;
+
+        var normalized = String(savedCode || '').toUpperCase().replace(/[^A-Z0-9]/g, '').substr(0, 8);
+        if (!normalized) return false;
+
+        var isLarge = false;
+        try { isLarge = window.matchMedia('(min-width: 768px)').matches; } catch (e) {}
+
+        var path = isLarge ? '/reconnect-desktop.html' : '/reconnect.html';
+        var target = 'http://' + window.location.hostname + path + '?code=' + encodeURIComponent(normalized);
+        setLoading('Ouverture de la page de reconnexion...');
+        window.location.replace(target);
+        return true;
+      }
+
+      if (routeToReconnectAfterLogoutIfNeeded()) {
+        return;
       }
 
       var clientMac = cleanTemplateValue('$(mac)');
@@ -1101,16 +1425,46 @@
         });
       }
 
-      function apiJson(path, method, body) {
-        return apiFetch(getApiBase() + path, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : undefined,
-          credentials: 'omit',
-        }).then(function (r) { return r.json(); }).catch(function () { return {}; });
+      async function apiJson(path, method, body) {
+        var bases = getApiBases();
+        var lastError = null;
+        var i;
+
+        for (i = 0; i < bases.length; i++) {
+          var base = bases[i];
+          var requestUrl = base + path;
+          try {
+            var r = await apiFetch(requestUrl, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: body ? JSON.stringify(body) : undefined,
+              credentials: 'omit',
+            });
+
+            var payload = await r.json().catch(function () { return {}; });
+            if (!r.ok || payload.ok === false) {
+              throw new Error(payload.error || payload.message || 'Paiement indisponible');
+            }
+
+            setApiBase(base);
+            return payload;
+          } catch (err) {
+            var msg = err && err.message ? String(err.message) : 'Echec reseau';
+            if (/Failed to fetch|NetworkError|Load failed|fetch|API inaccessible/i.test(msg)) {
+              lastError = err;
+              continue;
+            }
+            throw err;
+          }
+        }
+
+        var tested = bases.join(', ');
+        throw new Error('API inaccessible (' + tested + '). Verifiez VC_API_BASE, le walled-garden MikroTik et le port 3001.');
       }
 
       async function activateCodeAndRedirect(code) {
+        setLoading('Validation de votre code...');
+
         // Sauvegarder en localStorage AVANT le submit (survit aux redirects)
         try { localStorage.setItem('vc_last_code', code); } catch(e) {}
         try { localStorage.removeItem('vc_disconnecting'); } catch(e) {}
@@ -1133,6 +1487,7 @@
           var result = await resp.json();
 
           if (!resp.ok || result.ok === false) {
+            clearLoading();
             // Code invalide, expiré ou révoqué — ne pas aller sur MikroTik
             var errMsg = result.error || 'Code invalide ou expiré';
             voucherFeedback.className = 'error';
@@ -1145,6 +1500,15 @@
           if (sessionId) {
             try { localStorage.setItem('vc_last_session_id', sessionId); } catch(e) {}
           }
+
+          try {
+            localStorage.setItem('vc_last_session_payload', JSON.stringify({
+              ts: Date.now(),
+              active: true,
+              session: result.session || { code: code },
+              mikrotikLive: null
+            }));
+          } catch (e) {}
         } catch(e) {
           console.warn('activate:', e.message);
           // Erreur réseau : on continue quand même — MikroTik décidera
@@ -1152,6 +1516,7 @@
 
         // Soumettre à MikroTik : username=CODE, password=CODE
         // La session est maintenant en DB avant la redirection vers status.html
+        setLoading('Connexion au hotspot...');
         submitToMikrotik(code);
       }
 
@@ -1173,7 +1538,9 @@
         try { fromQuery = new URLSearchParams(window.location.search).get('code') || ''; } catch (e) {}
         var fromStorage = '';
         try { fromStorage = localStorage.getItem('vc_last_code') || ''; } catch (e) {}
-        return normalizeCode(fromQuery || fromStorage);
+        // Le stockage local represente le dernier code utilise avec succes.
+        // Le query param peut etre ancien si l'URL a ete conservee.
+        return normalizeCode(fromStorage || fromQuery);
       }
 
       function initQuickReconnect() {
@@ -1236,9 +1603,28 @@
       var planCards = document.getElementById("plan-grid").getElementsByClassName("plan-card");
       var paymentCards = document.getElementById("payment-grid").getElementsByClassName("payment-card");
       var amountValue = document.getElementById("amount-value");
-      var phoneInput = document.getElementById("phone");
       var achatFeedback = document.getElementById("achat-feedback");
       var generatedCodeEl = document.getElementById("generated-code");
+      var fedapayEmbedEl = document.getElementById("fedapay-embed");
+      var fedapayDialogEl = document.getElementById("fedapay-dialog");
+      var fedapayDialogCloseEl = document.getElementById("fedapay-dialog-close");
+      var pendingPaymentRef = "";
+      var pendingFallbackPaymentUrl = "";
+      var PENDING_PAYMENT_REF_KEY = 'vc_pending_payment_ref';
+
+      function readPendingPaymentRef() {
+        try { return String(localStorage.getItem(PENDING_PAYMENT_REF_KEY) || '').trim(); } catch (e) { return ''; }
+      }
+
+      function persistPendingPaymentRef(ref) {
+        var value = String(ref || '').trim();
+        if (!value) return;
+        try { localStorage.setItem(PENDING_PAYMENT_REF_KEY, value); } catch (e) {}
+      }
+
+      function clearPendingPaymentRef() {
+        try { localStorage.removeItem(PENDING_PAYMENT_REF_KEY); } catch (e) {}
+      }
 
       function renderAchatSteps(currentStep) {
         var html = "";
@@ -1316,11 +1702,186 @@
         showAchatStep("method");
       };
 
+      function openFedapayDialog() {
+        if (!fedapayDialogEl) return;
+        fedapayDialogEl.classList.add('is-visible');
+        fedapayDialogEl.setAttribute('aria-hidden', 'false');
+      }
+
+      function closeFedapayDialog() {
+        if (!fedapayDialogEl) return;
+        fedapayDialogEl.classList.remove('is-visible');
+        fedapayDialogEl.setAttribute('aria-hidden', 'true');
+      }
+
+      if (fedapayDialogCloseEl) {
+        fedapayDialogCloseEl.onclick = function () {
+          closeFedapayDialog();
+          resetEmbeddedCheckout();
+          if (pendingPaymentRef) {
+            achatFeedback.className = 'error';
+            achatFeedback.innerHTML = 'Paiement ferme avant confirmation. Vous pouvez reouvrir le checkout.';
+          }
+          showAchatStep('phone');
+        };
+      }
+
+      if (fedapayDialogEl) {
+        fedapayDialogEl.onclick = function (event) {
+          if (event.target === fedapayDialogEl && fedapayDialogCloseEl) {
+            fedapayDialogCloseEl.click();
+          }
+        };
+      }
+
+      function resetEmbeddedCheckout() {
+        if (!fedapayEmbedEl) return;
+        fedapayEmbedEl.innerHTML = "";
+      }
+
+      async function confirmEmbeddedPayment(ref, transactionId, fedapayStatus) {
+        var done = await apiJson('/api/captive/payments/complete', 'POST', {
+          ref: ref,
+          transactionId: transactionId ? String(transactionId) : undefined,
+          fedapayStatus: fedapayStatus || undefined,
+        });
+
+        if (done && done.code) {
+          generatedVoucherCode = normalizeCode(done.code);
+          generatedCodeEl.innerHTML = formatCode(generatedVoucherCode);
+          clearPendingPaymentRef();
+          showAchatStep('voucher');
+          resetEmbeddedCheckout();
+          return true;
+        }
+
+        if (done && done.statut === 'echec') {
+          clearPendingPaymentRef();
+          throw new Error('Paiement annule ou refuse.');
+        }
+
+        return false;
+      }
+
+      async function waitForPaymentVoucher(ref, maxAttempts, waitMs) {
+        var attempts = 0;
+        var lastState = null;
+        while (attempts < maxAttempts) {
+          attempts += 1;
+          lastState = await apiJson('/api/captive/payments/status', 'POST', { ref: ref });
+
+          if (lastState && lastState.code) {
+            generatedVoucherCode = normalizeCode(lastState.code);
+            generatedCodeEl.innerHTML = formatCode(generatedVoucherCode);
+            clearPendingPaymentRef();
+            return { done: true, state: lastState };
+          }
+
+          if (lastState && String(lastState.statut || '').toLowerCase() === 'echec') {
+            clearPendingPaymentRef();
+            throw new Error('Paiement annule ou refuse.');
+          }
+
+          if (attempts < maxAttempts) {
+            await delay(waitMs);
+          }
+        }
+
+        return { done: false, state: lastState };
+      }
+
+      function openFedapayEmbedded(result) {
+        var checkout = result && result.checkout ? result.checkout : null;
+        if (!checkout || checkout.mode !== 'embedded') return false;
+        if (!checkout.publicKey) {
+          throw new Error('FEDAPAY_PUBLIC_KEY (ou FEDAPAY_API_KEY) manquante pour le checkout embarque.');
+        }
+        if (!checkout.transactionId) {
+          throw new Error('Transaction FedaPay non initialisee.');
+        }
+        if (typeof window.FedaPay === 'undefined' || typeof window.FedaPay.init !== 'function') {
+          throw new Error('SDK FedaPay indisponible. Verifiez l acces a cdn.fedapay.com.');
+        }
+
+        pendingPaymentRef = String(result.ref || '').trim();
+        pendingFallbackPaymentUrl = String(result.paymentUrl || '').trim();
+        persistPendingPaymentRef(pendingPaymentRef);
+
+        showAchat();
+        showAchatStep('phone');
+        resetEmbeddedCheckout();
+        openFedapayDialog();
+
+        window.FedaPay.init({
+          public_key: checkout.publicKey,
+          environment: checkout.environment || undefined,
+          transaction_id: checkout.transactionId,
+          container: '#fedapay-embed',
+          onComplete: async function (response) {
+            try {
+              var reason = response && response.reason ? String(response.reason) : '';
+              var tx = response && response.transaction ? response.transaction : null;
+              var txId = tx && tx.id ? tx.id : checkout.transactionId;
+              // Statut retourne par FedaPay dans le callback onComplete
+              var txStatus = tx && tx.status ? String(tx.status).toLowerCase() : '';
+
+              // Toujours tenter la confirmation cote backend en premier:
+              // FedaPay peut fermer le dialog avec reason="DIALOG DISMISSED" meme apres un paiement reussi
+              var isDone = await confirmEmbeddedPayment(pendingPaymentRef, txId, txStatus);
+              if (isDone) {
+                closeFedapayDialog();
+                return;
+              }
+
+              // Si le dialog a ete ferme par l'utilisateur et aucun paiement confirme, sortir proprement
+              if (reason === 'DIALOG DISMISSED') {
+                closeFedapayDialog();
+                showAchatStep('phone');
+                resetEmbeddedCheckout();
+                return;
+              }
+
+              // Paiement potentiellement en cours de traitement: laisser plusieurs tentatives
+              var waited = await waitForPaymentVoucher(pendingPaymentRef, 8, 1500);
+              var polled = waited ? waited.state : null;
+
+              if (waited && waited.done) {
+                closeFedapayDialog();
+                showAchatStep('voucher');
+                resetEmbeddedCheckout();
+                return;
+              }
+
+              var remoteHint = polled && polled.remoteStatus ? (' (FedaPay: ' + polled.remoteStatus + ')') : '';
+
+              throw new Error('Paiement en cours de confirmation. Reessayez dans quelques secondes.' + remoteHint);
+            } catch (error) {
+              achatFeedback.className = 'error';
+              achatFeedback.innerHTML = error.message || 'Confirmation du paiement impossible.';
+
+              if (pendingFallbackPaymentUrl) {
+                achatFeedback.innerHTML += ' <br><a href="' + pendingFallbackPaymentUrl + '" target="_blank" rel="noopener">Ouvrir le paiement sur FedaPay</a>';
+              }
+              closeFedapayDialog();
+              showAchatStep('phone');
+              resetEmbeddedCheckout();
+            }
+          },
+        });
+
+        return true;
+      }
+
       document.getElementById("simulate-payment").onclick = async function () {
-        var digits = String(phoneInput.value || "").replace(/\D/g, "");
-        if (digits.length < 8) {
+        if (!selectedPlan) {
           achatFeedback.className = "error";
-          achatFeedback.innerHTML = "Numero invalide (minimum 8 chiffres).";
+          achatFeedback.innerHTML = "Selectionnez un forfait avant de continuer.";
+          return;
+        }
+
+        if (!selectedMethod) {
+          achatFeedback.className = "error";
+          achatFeedback.innerHTML = "Selectionnez un moyen de paiement.";
           return;
         }
 
@@ -1331,9 +1892,28 @@
           var result = await apiJson('/api/captive/payments/initiate', 'POST', {
             tarifId: selectedPlan.getAttribute("data-plan"),
             methode: selectedMethod.getAttribute("data-method"),
-            telephone: digits,
+            checkoutMode: 'embedded',
+            returnUrl: window.location.origin + '/login.html',
             borneId: borneId || undefined,
           });
+
+          if (openFedapayEmbedded(result)) {
+            return;
+          }
+
+          if (result && result.paymentUrl) {
+            setLoading('Redirection vers FedaPay...');
+            window.location.href = result.paymentUrl;
+            return;
+          }
+
+          if (!result || result.statut === 'en_attente') {
+            throw new Error('Paiement en attente de confirmation FedaPay. Reessayez dans quelques secondes.');
+          }
+
+          if (!result.code) {
+            throw new Error('Paiement valide mais aucun code n\'a ete genere.');
+          }
 
           generatedVoucherCode = result.code;
           generatedCodeEl.innerHTML = formatCode(result.code);
@@ -1344,6 +1924,132 @@
           showAchatStep("phone");
         }
       };
+
+      function cleanPaymentQueryParams() {
+        try {
+          var url = new URL(window.location.href);
+          var dirty = false;
+          ['payment_ref', 'payment_status', 'code'].forEach(function (key) {
+            if (url.searchParams.has(key)) {
+              url.searchParams.delete(key);
+              dirty = true;
+            }
+          });
+          if (dirty && window.history && window.history.replaceState) {
+            window.history.replaceState({}, '', url.pathname + (url.search ? url.search : '') + url.hash);
+          }
+        } catch (e) {}
+      }
+
+      function delay(ms) {
+        return new Promise(function (resolve) { setTimeout(resolve, ms); });
+      }
+
+      async function resolveReturnedPayment() {
+        var params;
+        try {
+          params = new URLSearchParams(window.location.search);
+        } catch (e) {
+          return;
+        }
+
+        var paymentRef = String(params.get('payment_ref') || '').trim();
+        if (!paymentRef) return;
+
+        var statusFromRedirect = String(params.get('payment_status') || '').trim().toLowerCase();
+        var codeFromRedirect = normalizeCode(params.get('code') || '');
+
+        showAchat();
+        showAchatStep('processing');
+
+        if (codeFromRedirect) {
+          generatedVoucherCode = codeFromRedirect;
+          generatedCodeEl.innerHTML = formatCode(codeFromRedirect);
+          clearPendingPaymentRef();
+          showAchatStep('voucher');
+          cleanPaymentQueryParams();
+          return;
+        }
+
+        if (statusFromRedirect === 'echec') {
+          achatFeedback.className = 'error';
+          achatFeedback.innerHTML = 'Paiement annule ou refuse. Veuillez reessayer.';
+          clearPendingPaymentRef();
+          showAchatStep('phone');
+          cleanPaymentQueryParams();
+          return;
+        }
+
+        try {
+          var attempts = 0;
+          var lastStatus = 'en_attente';
+          while (attempts < 6) {
+            attempts += 1;
+            var state = await apiJson('/api/captive/payments/status', 'POST', { ref: paymentRef });
+            lastStatus = String(state && state.statut || 'en_attente').toLowerCase();
+
+            if (state && state.code) {
+              generatedVoucherCode = normalizeCode(state.code);
+              generatedCodeEl.innerHTML = formatCode(generatedVoucherCode);
+              clearPendingPaymentRef();
+              showAchatStep('voucher');
+              cleanPaymentQueryParams();
+              return;
+            }
+
+            if (lastStatus === 'echec') {
+              throw new Error('Paiement annule ou refuse.');
+            }
+
+            await delay(1500);
+          }
+
+          var finalHint = (state && state.remoteStatus) ? (' (FedaPay: ' + state.remoteStatus + ')') : '';
+          throw new Error(lastStatus === 'en_attente'
+            ? 'Paiement en cours de confirmation. Revenez dans quelques secondes.' + finalHint
+            : 'Statut de paiement inconnu.' + finalHint);
+        } catch (error) {
+          achatFeedback.className = 'error';
+          achatFeedback.innerHTML = error.message || 'Confirmation du paiement impossible.';
+          showAchatStep('phone');
+          cleanPaymentQueryParams();
+        }
+      }
+
+      async function resolveStoredPendingPayment() {
+        var hasRedirectRef = false;
+        try {
+          var search = new URLSearchParams(window.location.search);
+          hasRedirectRef = Boolean(String(search.get('payment_ref') || '').trim());
+        } catch (e) {}
+        if (hasRedirectRef) return;
+
+        var storedRef = readPendingPaymentRef();
+        if (!storedRef) return;
+
+        pendingPaymentRef = storedRef;
+        showAchat();
+        showAchatStep('processing');
+
+        try {
+          var waited = await waitForPaymentVoucher(storedRef, 6, 1500);
+          var polled = waited ? waited.state : null;
+
+          if (waited && waited.done) {
+            showAchatStep('voucher');
+            return;
+          }
+
+          achatFeedback.className = 'error';
+          achatFeedback.innerHTML = 'Paiement en cours de confirmation. Reessayez dans quelques secondes.'
+            + (polled && polled.remoteStatus ? (' (FedaPay: ' + polled.remoteStatus + ')') : '');
+          showAchatStep('phone');
+        } catch (error) {
+          achatFeedback.className = 'error';
+          achatFeedback.innerHTML = error.message || 'Confirmation du paiement impossible.';
+          showAchatStep('phone');
+        }
+      }
 
       document.getElementById("use-generated-code").onclick = function () {
         var c = generatedVoucherCode || generatedCodeEl.innerHTML.replace(/\s/g, "");
@@ -1380,6 +2086,8 @@
 
       renderAchatSteps(achatCurrentStep);
       initQuickReconnect();
+      resolveReturnedPayment();
+      resolveStoredPendingPayment();
 
       if (mtError) {
         voucherFeedback.className = "error";

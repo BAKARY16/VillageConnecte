@@ -329,16 +329,33 @@ router.post('/generate', requireAuth, validate(schemas.generateVouchers), async 
       params
     );
 
-    // Synchroniser les vouchers générés vers MikroTik (non-bloquant)
+    // Synchroniser les vouchers générés vers MikroTik avec retries.
+    let mikrotikSync = null;
     if (process.env.MIKROTIK_ENABLED === 'true') {
       const vouchersForMikrotik = created.map(v => ({
         code: v.code,
         tarif_slug: tarif.slug,
         duree_heures: parseFloat(tarif.duree_heures),
       }));
-      mikrotik.ensureHotspotProfile(tarif.slug, parseFloat(tarif.vitesse_mbps) || 5)
-        .then(() => mikrotik.syncVouchers(vouchersForMikrotik))
-        .catch(err => console.error('MikroTik sync generate error:', err.message));
+
+      try {
+        await mikrotik.ensureHotspotProfile(tarif.slug, parseFloat(tarif.vitesse_mbps) || 5);
+        mikrotikSync = await mikrotik.syncVouchers(vouchersForMikrotik, { upsert: true, maxAttempts: 3 });
+
+        if (mikrotikSync.errors > 0 && Array.isArray(mikrotikSync.failedCodes) && mikrotikSync.failedCodes.length > 0) {
+          const retryBatch = vouchersForMikrotik.filter(v => mikrotikSync.failedCodes.includes(String(v.code || '').toUpperCase()));
+          setImmediate(async () => {
+            try {
+              const retry = await mikrotik.syncVouchers(retryBatch, { upsert: true, maxAttempts: 2 });
+              console.warn(`⚠️ MikroTik rattrapage vouchers/generate: ${retry.synced} sync, ${retry.errors} erreurs`);
+            } catch (retryErr) {
+              console.warn('⚠️ MikroTik rattrapage vouchers/generate erreur:', retryErr.message);
+            }
+          });
+        }
+      } catch (err) {
+        mikrotikSync = { success: false, error: err.message || 'Sync MikroTik impossible' };
+      }
     }
 
     return res.status(201).json({
@@ -346,6 +363,7 @@ router.post('/generate', requireAuth, validate(schemas.generateVouchers), async 
       message: `${quantite} voucher(s) ${tarif_slug}(s) générés avec succès.`,
       count:   quantite,
       vouchers: created,
+      mikrotikSync,
     });
   } catch (err) {
     console.error('Generate error:', err);

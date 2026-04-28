@@ -1,9 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Village Connecte - Connexion etablie</title>
+  <style>
+    :root { --brand: #55104d; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Segoe UI", Arial, sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f4f6fa;
+      color: #2a1833;
+      padding: 24px;
+    }
+    .card {
+      width: 100%; max-width: 360px;
+      background: #fff;
+      border: 1px solid rgba(85, 16, 77, 0.12);
+      border-radius: 18px;
+      box-shadow: 0 12px 34px rgba(85, 16, 77, 0.14);
+      text-align: center;
+      padding: 24px 22px 20px;
+    }
+    .icon {
+      width: 36px;
+      height: 36px;
+      margin: 0 auto 10px;
+      color: #16a34a;
+    }
+    .icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    h1 {
+      margin: 0 0 6px;
+      color: var(--brand);
+      font-size: 1.08rem;
+    }
+    p {
+      margin: 0;
+      color: #707b8f;
+      font-size: 0.86rem;
+      line-height: 1.45;
+    }
+    .spinner {
+      width: 48px;
+      height: 48px;
+      margin: 14px auto 0;
+      position: relative;
+      color: var(--brand);
+      animation: spin 1.1s linear infinite;
+    }
+    .spinner i {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 13px;
+      margin-left: -2px;
+      margin-top: -20px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.16;
+      transform-origin: center 20px;
+    }
+    .spinner i:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+    .spinner i:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+    .spinner i:nth-child(3) { transform: rotate(60deg); opacity: 0.84; }
+    .spinner i:nth-child(4) { transform: rotate(90deg); opacity: 0.76; }
+    .spinner i:nth-child(5) { transform: rotate(120deg); opacity: 0.68; }
+    .spinner i:nth-child(6) { transform: rotate(150deg); opacity: 0.6; }
+    .spinner i:nth-child(7) { transform: rotate(180deg); opacity: 0.52; }
+    .spinner i:nth-child(8) { transform: rotate(210deg); opacity: 0.44; }
+    .spinner i:nth-child(9) { transform: rotate(240deg); opacity: 0.36; }
+    .spinner i:nth-child(10) { transform: rotate(270deg); opacity: 0.3; }
+    .spinner i:nth-child(11) { transform: rotate(300deg); opacity: 0.24; }
+    .spinner i:nth-child(12) { transform: rotate(330deg); opacity: 0.2; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
   <script>
     (function () {
       // MikroTik sert cette page quand la redirection post-login n'a pas de dst defini.
@@ -15,14 +99,50 @@
       //   - Windows : msftconnecttest.com repond correctement -> NCSI confirme
       //
       // Si $(link-orig) n'est pas disponible (variable non resolue ou vide),
-      // on redirige vers status.html pour afficher les infos de session.
+      // on redirige vers status.htmlour afficher les infos de session.
       var orig = '$(link-orig)';
       var isTemplate = !orig || orig.indexOf('$(') !== -1 || orig.trim() === '';
-      window.location.replace(isTemplate ? 'status.html' : orig);
+
+      function buildAbsoluteHttpPath(path) {
+        var host = window.location.hostname || window.location.host || '192.168.1.1';
+        return 'http://' + host + path;
+      }
+
+      var fallbackUrl = buildAbsoluteHttpPath('/status.html');
+      var targetUrl = isTemplate ? fallbackUrl : orig;
+
+      // Certains mini-browsers captive n'aiment pas les chemins relatifs ou les redirections trop rapides.
+      // On force un fallback HTTP absolu vers status.html si la redirection principale ne s'exécute pas.
+      setTimeout(function () {
+        try {
+          window.location.replace(fallbackUrl);
+        } catch (e) {
+          window.location.href = fallbackUrl;
+        }
+      }, 1800);
+
+      try {
+        window.location.replace(targetUrl);
+      } catch (e) {
+        window.location.href = targetUrl;
+      }
     })();
   </script>
 </head>
-<body style="font-family:sans-serif;text-align:center;padding:40px;color:#55104d;">
-  Connexion etablie. Redirection en cours...
+<body>
+  <div class="card">
+    <div class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"></path></svg>
+    </div>
+    <h1>Connexion etablie</h1>
+    <p>Redirection en cours...</p>
+    <p style="margin-top:10px;font-size:0.8rem;">
+      Si rien ne s'ouvre automatiquement,
+      <a href="http://$(hostname)/status.html" style="color:#55104d;font-weight:700;">ouvrez votre session</a>.
+    </p>
+    <div class="spinner" aria-hidden="true">
+      <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </div>
 </body>
 </html>

@@ -8,6 +8,59 @@ Cette intégration permet au backend de:
 - ✅ Lister les utilisateurs actifs connectés
 - ✅ Déconnecter manuellement les utilisateurs
 
+---
+
+## 🚀 Mise en ligne (voisilab.online)
+
+Contexte de production:
+- Backend/API public: https://villageconnecte.voisilab.online/api
+- Admin: https://villageconnecte.voisilab.online/admin/
+- Portail captif: pages HTML servies par le MikroTik (dossier hotspot), pas par le domaine public
+
+Checklist rapide côté backend:
+
+1. Utiliser un fichier `.env` de prod basé sur `backend/.env.production.example`
+2. Vérifier au minimum:
+  - `NODE_ENV=production`
+  - `CORS_ORIGINS=https://villageconnecte.voisilab.online`
+  - `BACKEND_PUBLIC_BASE_URL=https://villageconnecte.voisilab.online`
+  - `BACKEND_BASE_URL=https://villageconnecte.voisilab.online/api`
+  - `MIKROTIK_ENABLED=true`
+3. Redémarrer le backend et vérifier:
+
+```bash
+curl https://villageconnecte.voisilab.online/health
+curl https://villageconnecte.voisilab.online/api/public/tarifs
+```
+
+Checklist MikroTik quand on passe en ligne:
+
+1. DNS/DHCP
+  - Le DNS fourni aux clients WiFi doit pointer sur le MikroTik (IP LAN du routeur)
+  - `allow-remote-requests=yes` activé
+
+2. Hotspot profile
+  - `html-directory=hotspot`
+  - `login-by=http-pap,https`
+  - `dns-name` cohérent avec le nom de domaine exposé aux clients (si certificat public)
+
+3. Walled-garden (pré-auth)
+  - Autoriser le domaine backend/public pour le portail MikroTik avant authentification:
+    - `villageconnecte.voisilab.online`
+  - Si le portail fait des appels XHR/fetch vers l'API online, ces appels doivent passer en pre-auth
+
+4. Ne pas whitelister les domaines de détection captive des OS
+  - Sinon Android/iOS/Windows pensent qu'Internet est déjà ouvert et n'affichent pas le portail.
+
+5. API RouterOS
+  - Vérifier l'utilisateur API (`api-user`) et le port (8728 ou 8729)
+  - Vérifier la connectivité backend -> MikroTik en LAN/VPN privé (jamais exposer l'API RouterOS sur Internet)
+
+6. Test de bout en bout
+  - Générer un voucher depuis l'admin
+  - Vérifier qu'il apparaît dans `/ip/hotspot/user`
+  - Se connecter en client WiFi, valider le code, vérifier l'accès Internet et la page status
+
 ## Prérequis
 
 1. **MikroTik RouterOS** (version 6.48+)
@@ -50,6 +103,122 @@ Vérifier que le serveur RADIUS ou la validation d'accès est bien con figurée:
 ```bash
 /ip hotspot server profile print
 ```
+
+### 4️⃣ Redirection automatique et HTTPS fiable
+
+Pour que les telephones ouvrent automatiquement le portail captif, il faut distinguer deux sujets:
+
+1. **Ouverture automatique du portail**
+  - Elle depend surtout de la detection captive des OS (Android, iPhone, Windows), pas du backend.
+  - Le Hotspot MikroTik doit bien intercepter les requetes HTTP de detection et servir `login.html` / `redirect.html`.
+  - Le fallback le plus compatible reste un portail Hotspot joignable en **HTTP** sur l'IP/nom local du MikroTik.
+
+2. **HTTPS sans alerte de securite**
+  - Il n'existe pas de certificat local capable de "rassurer" proprement les appareils s'il n'est pas emis par une **autorite de confiance publique**.
+  - Un certificat auto-signe ou local ne supprimera pas les alertes sur iPhone/Android/PC.
+  - La bonne solution est d'utiliser un **nom de domaine** stable (ex: `wifi.village-connecte.ci`) avec un **certificat public valide** importe dans MikroTik.
+
+Exemple de configuration Hotspot avec certificat valide:
+
+```bash
+/ip hotspot profile set [find default=yes] \
+  dns-name=wifi.village-connecte.ci \
+  hotspot-address=10.5.50.253 \
+  login-by=http-pap,https \
+  ssl-certificate=wifi-village-connecte
+```
+
+Points importants:
+- `dns-name` doit correspondre exactement au nom du certificat.
+- Le certificat doit etre emis par une CA reconnue publiquement.
+- Le nom de domaine doit resoudre vers l'adresse du portail captive cote clients.
+- Si certains appareils supportent mal HTTPS en pre-auth, garder **HTTP actif** en plus de HTTPS reste la configuration la plus robuste.
+
+En pratique:
+- **HTTP** sert a capter et ouvrir automatiquement le portail.
+- **HTTPS** sert a rassurer les appareils compatibles, mais seulement avec un vrai certificat public.
+- On ne cherche pas a contourner la verification TLS: on fournit une chaine de confiance valide.
+
+### 5️⃣ Ouvrir automatiquement le portail des la connexion WiFi
+
+Objectif: l'utilisateur se connecte simplement au SSID, puis l'appareil ouvre tout seul l'assistant captif ou affiche la page de login, sans taper l'URL manuellement.
+
+Important:
+- On ne peut pas **forcer 100%** des appareils a ouvrir une fenetre captive, car iPhone, Android et Windows decident eux-memes d'ouvrir ou non leur mini-navigateur.
+- En revanche, on peut configurer MikroTik pour que le comportement soit correct et automatique sur la grande majorite des appareils.
+
+Configuration minimale recommandee:
+
+```bash
+# 1. Le routeur doit repondre au DNS des clients
+/ip dns set allow-remote-requests=yes servers=1.1.1.1,8.8.8.8
+
+# 2. Le DHCP doit donner le MikroTik comme DNS aux clients WiFi
+/ip dhcp-server network set [find] dns-server=10.5.50.253 gateway=10.5.50.253
+
+# 3. Le profil hotspot doit avoir un dns-name et accepter HTTP
+/ip hotspot profile set [find default=yes] \
+  hotspot-address=10.5.50.253 \
+  dns-name=wifi.village-connecte.ci \
+  login-by=http-pap,https \
+  html-directory=hotspot
+
+# 4. Verifier que le serveur hotspot est bien actif sur le bridge/interface WiFi
+/ip hotspot print
+/ip hotspot set [find] profile=default
+
+# 5. NAT sortant Internet
+/ip firewall nat add chain=srcnat action=masquerade out-interface-list=WAN
+```
+
+Verification importante:
+- Ne pas mettre en walled-garden les domaines de detection captive des OS (`connectivitycheck`, `msftconnecttest`, `captive.apple.com`, `generate_204`).
+- Si ces domaines passent librement, le telephone peut croire qu'Internet fonctionne deja et ne pas ouvrir le portail.
+
+Comportement attendu:
+- le client rejoint le SSID WiFi
+- l'OS tente une URL de detection captive
+- MikroTik intercepte la requete HTTP
+- le portail `login.html` s'ouvre automatiquement ou le mini-browser captive apparait
+
+Si certains appareils n'ouvrent toujours pas automatiquement:
+- verifier que leur premiere requete n'est pas forcee en HTTPS uniquement
+- garder `http-pap` actif dans `login-by`
+- conserver une page `redirect.html` fonctionnelle dans le dossier hotspot
+- verifier que les clients recoivent bien le DNS du MikroTik via DHCP
+
+### Script pret a importer
+
+Un script RouterOS reutilisable est disponible dans [backend/scripts/mikrotik-hotspot-autoredirect.rsc](backend/scripts/mikrotik-hotspot-autoredirect.rsc).
+
+Usage recommande:
+
+1. Adapter en tete du script:
+  - `bridgeName`
+  - `wanList`
+  - `hotspotServer`
+  - `hotspotAddress`
+  - `hotspotCidr`
+  - `backendApiIp`
+
+2. Importer sur le MikroTik:
+
+```bash
+/import file-name=mikrotik-hotspot-autoredirect.rsc
+```
+
+3. Verifier ensuite:
+
+```bash
+/ip hotspot profile print detail
+/ip hotspot walled-garden ip print
+/ip dhcp-server network print detail
+/ip dns print
+```
+
+Cette variante est la moins couteuse et la plus robuste:
+- **HTTP** reste le mecanisme principal pour ouvrir automatiquement le portail captif.
+- **HTTPS autosigne** peut rester active, mais ne doit pas etre le prerequis du flux captive.
 
 ---
 

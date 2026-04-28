@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="fr">
+
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -9,26 +10,35 @@
   <title>Reconnexion - Village Connecte</title>
   <style>
     :root {
-      --brand-primary:   #55104d;
-      --brand-dark:      #3d0b38;
+      --brand-primary: #55104d;
+      --brand-dark: #3d0b38;
       --brand-secondary: #f29a07;
-      --brand-success:   #16a34a;
-      --bg-base:         #f4f6fa;
-      --bg-card:         #fffdfd;
-      --bg-elevated:     #f1ecf7;
-      --bg-soft:         #f9f7fc;
-      --text-primary:    #2a1833;
-      --text-secondary:  #55104d;
-      --text-muted:      #707b8f;
-      --border-subtle:   rgba(85,16,77,0.06);
-      --shadow-lg:       0 8px 32px rgba(85,16,77,0.12);
-      --radius-xl:       24px;
-      --radius-lg:       16px;
-      --radius-md:       10px;
+      --brand-success: #16a34a;
+      --bg-base: #f4f6fa;
+      --bg-card: #fffdfd;
+      --bg-elevated: #f1ecf7;
+      --bg-soft: #f9f7fc;
+      --text-primary: #2a1833;
+      --text-secondary: #55104d;
+      --text-muted: #707b8f;
+      --border-subtle: rgba(85, 16, 77, 0.06);
+      --shadow-lg: 0 8px 32px rgba(85, 16, 77, 0.12);
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 10px;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { -webkit-text-size-adjust: 100%; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      -webkit-text-size-adjust: 100%;
+    }
 
     body {
       font-family: "Segoe UI", system-ui, -apple-system, Arial, sans-serif;
@@ -54,7 +64,7 @@
     .portal-root::before {
       content: "";
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: url("backgrounds.jpg") no-repeat center center / cover;
       opacity: 0.95;
       filter: blur(4px);
@@ -64,12 +74,15 @@
     .portal-root::after {
       content: "";
       position: fixed;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(244,246,250,0.2), rgba(244,246,250,0.8));
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: linear-gradient(180deg, rgba(244, 246, 250, 0.2), rgba(244, 246, 250, 0.8));
       z-index: 0;
     }
 
-    .portal-root > * { position: relative; z-index: 1; }
+    .portal-root>* {
+      position: relative;
+      z-index: 1;
+    }
 
     /* ── Header (identique à login.html) ────────────────────── */
     .portal-header {
@@ -86,18 +99,39 @@
       animation: fadeInDown 0.35s ease both;
     }
 
-    .portal-logo { display: flex; align-items: center; gap: 10px; }
-    .portal-logo img { width: 55px; height: 42px; border-radius: 6px; object-fit: contain; }
-    .portal-logo-title { font-size: 14px; font-weight: 700; color: var(--brand-primary); line-height: 1.2; }
-    .portal-logo-sub   { font-size: 10px; color: var(--text-muted); line-height: 1.2; }
+    .portal-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .portal-logo img {
+      width: 55px;
+      height: 42px;
+      border-radius: 6px;
+      object-fit: contain;
+    }
+
+    .portal-logo-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--brand-primary);
+      line-height: 1.2;
+    }
+
+    .portal-logo-sub {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
 
     .network-status {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      border: 1px solid rgba(220,38,38,0.35);
+      border: 1px solid rgba(220, 38, 38, 0.35);
       color: #dc2626;
-      background: rgba(220,38,38,0.08);
+      background: rgba(220, 38, 38, 0.08);
       border-radius: 999px;
       padding: 5px 14px;
       font-size: 11px;
@@ -106,7 +140,8 @@
 
     .network-status::before {
       content: "";
-      width: 8px; height: 8px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
       background: #dc2626;
       flex-shrink: 0;
@@ -137,14 +172,20 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(220,38,38,0.1);
-      border: 1px solid rgba(220,38,38,0.2);
+      background: rgba(220, 38, 38, 0.1);
+      border: 1px solid rgba(220, 38, 38, 0.2);
       color: #dc2626;
       border-radius: 999px;
       padding: 4px 14px;
       font-size: 0.75rem;
       font-weight: 700;
       margin-bottom: 12px;
+    }
+
+    .badge-icon {
+      width: 15px;
+      height: 15px;
+      display: inline-block;
     }
 
     .intro h1 {
@@ -181,9 +222,16 @@
     }
 
     .card-header .session-icon {
-      font-size: clamp(1.8rem, 5vw, 2.4rem);
       display: block;
       margin-bottom: 6px;
+      color: var(--brand-primary);
+    }
+
+    .card-header .session-icon svg {
+      width: clamp(28px, 6vw, 36px);
+      height: clamp(28px, 6vw, 36px);
+      stroke: currentColor;
+      stroke-width: 1.8;
     }
 
     .card-header h2 {
@@ -205,8 +253,8 @@
     /* ── Bloc code mémorisé ──────────────────────────────────── */
     .saved-code-block {
       display: none;
-      background: rgba(22,163,74,0.07);
-      border: 1px solid rgba(22,163,74,0.25);
+      background: rgba(22, 163, 74, 0.07);
+      border: 1px solid rgba(22, 163, 74, 0.25);
       border-radius: var(--radius-lg);
       padding: clamp(12px, 2.5vw, 18px) clamp(14px, 3vw, 20px);
       margin-bottom: clamp(16px, 3vw, 24px);
@@ -245,7 +293,7 @@
       content: "";
       flex: 1;
       height: 1px;
-      background: rgba(85,16,77,0.1);
+      background: rgba(85, 16, 77, 0.1);
     }
 
     /* ── Boutons ─────────────────────────────────────────────── */
@@ -276,13 +324,13 @@
     .btn-primary {
       background: var(--brand-primary);
       color: #fff;
-      box-shadow: 0 4px 16px rgba(85,16,77,0.28);
+      box-shadow: 0 4px 16px rgba(85, 16, 77, 0.28);
       margin-bottom: clamp(10px, 2vw, 14px);
     }
 
     .btn-primary:hover:not(:disabled) {
       background: var(--brand-dark);
-      box-shadow: 0 6px 20px rgba(85,16,77,0.35);
+      box-shadow: 0 6px 20px rgba(85, 16, 77, 0.35);
     }
 
     .btn-primary:disabled {
@@ -294,7 +342,7 @@
     .btn-outline {
       background: #fff;
       color: var(--brand-primary);
-      border: 2px solid rgba(85,16,77,0.25);
+      border: 2px solid rgba(85, 16, 77, 0.25);
     }
 
     .btn-outline:hover {
@@ -302,10 +350,35 @@
       border-color: var(--brand-primary);
     }
 
-    .btn-icon { font-size: clamp(1rem, 2.5vw, 1.2rem); flex-shrink: 0; }
+    .btn-icon {
+      width: clamp(18px, 2.8vw, 22px);
+      height: clamp(18px, 2.8vw, 22px);
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
 
-    .btn-text-wrap { display: flex; flex-direction: column; align-items: flex-start; }
-    .btn-label { line-height: 1.2; }
+    .btn-icon svg {
+      width: 100%;
+      height: 100%;
+      stroke: currentColor;
+      stroke-width: 2;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .btn-text-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .btn-label {
+      line-height: 1.2;
+    }
+
     .btn-sub {
       font-size: clamp(0.65rem, 1.4vw, 0.73rem);
       font-weight: 400;
@@ -318,7 +391,7 @@
     .card-footer-note {
       margin-top: clamp(16px, 3vw, 22px);
       padding-top: clamp(12px, 2vw, 16px);
-      border-top: 1px solid rgba(85,16,77,0.06);
+      border-top: 1px solid rgba(85, 16, 77, 0.06);
       font-size: clamp(0.68rem, 1.4vw, 0.75rem);
       color: var(--text-muted);
       text-align: center;
@@ -327,21 +400,181 @@
 
     /* ── Animations ──────────────────────────────────────────── */
     @keyframes fadeInDown {
-      from { opacity: 0; transform: translateY(-14px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-14px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     @keyframes fadeInUp {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(18px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     /* ── Responsive ──────────────────────────────────────────── */
     @media (max-width: 360px) {
-      .portal-logo-title, .portal-logo-sub { display: none; }
+
+      .portal-logo-title,
+      .portal-logo-sub {
+        display: none;
+      }
+    }
+
+    .vc-loading-overlay {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(22, 16, 26, 0.42);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .vc-loading-overlay.is-visible {
+      display: flex;
+    }
+
+    .vc-loading-card {
+      width: 100%; max-width: 320px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 16px 44px rgba(15, 10, 18, 0.24);
+      border: 1px solid rgba(85, 16, 77, 0.1);
+      padding: 18px 18px 16px;
+      text-align: center;
+      color: var(--text-secondary);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .vc-spinner {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 12px;
+      position: relative;
+      color: var(--brand-primary);
+      animation: vc-spin 1.1s linear infinite;
+    }
+
+    .vc-spinner i {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 14px;
+      margin-left: -2px;
+      margin-top: -22px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.16;
+      transform-origin: center 22px;
+    }
+
+    .vc-spinner i:nth-child(1) {
+      transform: rotate(0deg);
+      opacity: 1;
+    }
+
+    .vc-spinner i:nth-child(2) {
+      transform: rotate(30deg);
+      opacity: 0.92;
+    }
+
+    .vc-spinner i:nth-child(3) {
+      transform: rotate(60deg);
+      opacity: 0.84;
+    }
+
+    .vc-spinner i:nth-child(4) {
+      transform: rotate(90deg);
+      opacity: 0.76;
+    }
+
+    .vc-spinner i:nth-child(5) {
+      transform: rotate(120deg);
+      opacity: 0.68;
+    }
+
+    .vc-spinner i:nth-child(6) {
+      transform: rotate(150deg);
+      opacity: 0.6;
+    }
+
+    .vc-spinner i:nth-child(7) {
+      transform: rotate(180deg);
+      opacity: 0.52;
+    }
+
+    .vc-spinner i:nth-child(8) {
+      transform: rotate(210deg);
+      opacity: 0.44;
+    }
+
+    .vc-spinner i:nth-child(9) {
+      transform: rotate(240deg);
+      opacity: 0.36;
+    }
+
+    .vc-spinner i:nth-child(10) {
+      transform: rotate(270deg);
+      opacity: 0.3;
+    }
+
+    .vc-spinner i:nth-child(11) {
+      transform: rotate(300deg);
+      opacity: 0.24;
+    }
+
+    .vc-spinner i:nth-child(12) {
+      transform: rotate(330deg);
+      opacity: 0.2;
+    }
+
+    @keyframes vc-spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* === Compat anciens navigateurs (Chrome < 79, Android 6) === */
+    @supports not (width: min(1px, 1px)) {
+      .portal-main { padding: 20px 12px 48px; }
+      .intro { margin-bottom: 16px; }
+      .intro h1 { font-size: 1.3rem; }
+      .intro p { font-size: 0.8rem; }
+      .card-header { padding: 16px 20px; }
+      .card-header h2 { font-size: 0.95rem; }
+      .card-header p { font-size: 0.75rem; }
+      .card-header .session-icon svg { width: 28px; height: 28px; }
+      .card-body { padding: 20px; }
+      .saved-code-block { padding: 12px 14px; margin-bottom: 16px; }
+      .saved-code-label { font-size: 0.72rem; }
+      .saved-code-val { font-size: 1.2rem; }
+      .divider-text { margin: 16px 0; }
+      .btn { min-height: 50px; padding: 12px 16px; font-size: 0.85rem; gap: 8px; }
+      .btn-icon { width: 18px; height: 18px; }
+      .btn-primary { margin-bottom: 10px; }
+      .btn-sub { font-size: 0.65rem; }
+      .card-footer-note { margin-top: 16px; padding-top: 12px; font-size: 0.68rem; }
     }
   </style>
 </head>
+
 <body>
   <!-- MikroTik injecte $(link-login) après fermeture de session -->
   <input type="hidden" id="mt-link-login" value="$(link-login)">
@@ -365,14 +598,31 @@
       <div class="portal-container">
 
         <div class="intro">
-          <div class="badge">🔒 Deconnecte</div>
+          <div class="badge">
+            <span class="badge-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="10" rx="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+            </span>
+            <span>Deconnecte</span>
+          </div>
           <h1>Votre session est terminee</h1>
           <p>Choisissez comment continuer ci-dessous</p>
         </div>
 
         <section class="card">
           <div class="card-header">
-            <span class="session-icon">📶</span>
+            <span class="session-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M5 13a10 10 0 0 1 14 0"></path>
+                <path d="M8.5 16.5a5 5 0 0 1 7 0"></path>
+                <path d="M12 20h.01"></path>
+                <path d="M2 9a16 16 0 0 1 20 0"></path>
+              </svg>
+            </span>
             <h2>Que souhaitez-vous faire ?</h2>
             <p>Reconnectez-vous ou utilisez un autre code</p>
           </div>
@@ -386,8 +636,15 @@
             </div>
 
             <!-- Bouton 1 : reconnexion avec le même code -->
-            <button class="btn btn-primary" id="btn-reconnect" disabled>
-              <span class="btn-icon">&#x21BA;</span>
+            <button class="btn btn-primary" id="btn-reconnect" type="button" disabled>
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M21 2v6h-6"></path>
+                  <path d="M3 12a9 9 0 0 1 15.5-6.5L21 8"></path>
+                  <path d="M3 22v-6h6"></path>
+                  <path d="M21 12a9 9 0 0 1-15.5 6.5L3 16"></path>
+                </svg>
+              </span>
               <span class="btn-text-wrap">
                 <span class="btn-label">Se reconnecter</span>
                 <span class="btn-sub" id="hint-reconnect">Aucun code memorise</span>
@@ -397,8 +654,13 @@
             <div class="divider-text">ou</div>
 
             <!-- Bouton 2 : autre code ou achat -->
-            <button class="btn btn-outline" id="btn-new">
-              <span class="btn-icon">&#x2B;</span>
+            <button class="btn btn-outline" id="btn-new" type="button">
+              <span class="btn-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 5v14"></path>
+                  <path d="M5 12h14"></path>
+                </svg>
+              </span>
               <span class="btn-text-wrap">
                 <span class="btn-label">Autre code ou Acheter</span>
                 <span class="btn-sub">Saisir un nouveau code ou acheter un forfait</span>
@@ -417,6 +679,15 @@
 
   </div>
 
+  <div class="vc-loading-overlay" id="vc-loading" aria-hidden="true">
+    <div class="vc-loading-card">
+      <div class="vc-spinner" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <div id="vc-loading-text">Traitement en cours...</div>
+    </div>
+  </div>
+
   <!-- Formulaire de login MikroTik (identique a login.html) -->
   <form id="sendin" action="$(link-login-only)" method="post" style="display:none;">
     <input type="hidden" name="username">
@@ -426,8 +697,8 @@
   </form>
 
   <!-- Variables MikroTik injectees -->
-  <input type="hidden" id="mt-mac"         value="$(mac)">
-  <input type="hidden" id="mt-ip"          value="$(ip)">
+  <input type="hidden" id="mt-mac" value="$(mac)">
+  <input type="hidden" id="mt-ip" value="$(ip)">
   <input type="hidden" id="mt-server-name" value="$(server-name)">
 
   <script>
@@ -435,18 +706,97 @@
       var t = String(v || '').trim();
       return (!t || t.indexOf('$(') === 0) ? '' : t;
     }
-    function lsGet(k)    { try { return localStorage.getItem(k) || ''; } catch(e) { return ''; } }
-    function lsSet(k, v) { try { localStorage.setItem(k, v); }          catch(e) {} }
-    function lsRemove(k) { try { localStorage.removeItem(k); }          catch(e) {} }
-    function getQuery(n) { try { return new URLSearchParams(window.location.search).get(n) || ''; } catch(e) { return ''; } }
+    function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+    function lsSet(k, v) { try { localStorage.setItem(k, v); } catch (e) { } }
+    function lsRemove(k) { try { localStorage.removeItem(k); } catch (e) { } }
+    function getQuery(n) { try { return new URLSearchParams(window.location.search).get(n) || ''; } catch (e) { return ''; } }
+
+    var loadingOverlay = document.getElementById('vc-loading');
+    var loadingText = document.getElementById('vc-loading-text');
+
+    function setLoading(message) {
+      if (loadingText) loadingText.textContent = message || 'Traitement en cours...';
+      if (loadingOverlay) {
+        loadingOverlay.classList.add('is-visible');
+        loadingOverlay.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function clearLoading() {
+      if (!loadingOverlay) return;
+      loadingOverlay.classList.remove('is-visible');
+      loadingOverlay.setAttribute('aria-hidden', 'true');
+    }
 
     // Variables MikroTik
     var clientMac = cleanValue(document.getElementById('mt-mac').value);
-    var clientIp  = cleanValue(document.getElementById('mt-ip').value);
-    var borneId   = cleanValue(document.getElementById('mt-server-name').value) || 'B08';
+    var clientIp = cleanValue(document.getElementById('mt-ip').value);
+    var borneId = cleanValue(document.getElementById('mt-server-name').value) || 'B08';
 
-    // API backend
-    var VC_API_BASE = 'http://192.168.1.128:3001';
+    // API backend configurable: query ?api_base=... / localStorage / fallback.
+    function normalizeApiBase(value) {
+      var text = String(value || '').trim().replace(/\/+$/, '');
+      if (!text) return '';
+      if (/\/api$/i.test(text)) {
+        text = text.replace(/\/api$/i, '');
+      }
+      return text;
+    }
+
+    var VC_API_BASE = (function () {
+      var fromQuery = '';
+      try {
+        fromQuery = normalizeApiBase(getQuery('api_base') || getQuery('api') || '');
+      } catch (e) {}
+
+      var fromStorage = '';
+      try {
+        fromStorage = normalizeApiBase(localStorage.getItem('vc_api_base') || '');
+      } catch (e) {}
+
+      var fromHost = normalizeApiBase('http://' + window.location.hostname + ':3001');
+      var rawCandidates = [
+        fromQuery,
+        fromStorage,
+        'https://villageconnecte.voisilab.online',
+        fromHost,
+        'http://10.5.50.252:3001',
+        'http://10.5.50.253:3001'
+      ];
+      var seen = {};
+      var candidates = [];
+      var i;
+      for (i = 0; i < rawCandidates.length; i++) {
+        var c = normalizeApiBase(rawCandidates[i]);
+        if (!c || seen[c]) continue;
+        seen[c] = true;
+        candidates.push(c);
+      }
+
+      var base = candidates[0] || 'http://10.5.50.252:3001';
+      if (fromQuery) {
+        try { localStorage.setItem('vc_api_base', base); } catch (e) {}
+      }
+      window.VC_API_BASES = candidates.length ? candidates : [base];
+      return base;
+    })();
+
+    function getApiBases() {
+      var list = Array.isArray(window.VC_API_BASES) ? window.VC_API_BASES.slice() : [];
+      if (!list.length) list = [VC_API_BASE];
+      if (list[0] !== VC_API_BASE) {
+        list = [VC_API_BASE].concat(list.filter(function (item) { return item !== VC_API_BASE; }));
+      }
+      return list;
+    }
+
+    function setApiBase(base) {
+      var normalized = normalizeApiBase(base);
+      if (!normalized) return;
+      VC_API_BASE = normalized;
+      window.VC_API_BASES = [normalized].concat(getApiBases().filter(function (item) { return item !== normalized; }));
+      try { localStorage.setItem('vc_api_base', normalized); } catch (e) {}
+    }
 
     function apiFetch(url, opts) {
       return fetch(url, opts).catch(function () {
@@ -462,7 +812,7 @@
         if (action && action.indexOf('http') === 0) {
           return new URL(action).origin + '/status.html?code=' + encodeURIComponent(code);
         }
-      } catch(e) {}
+      } catch (e) { }
       return 'http://' + window.location.hostname + '/status.html?code=' + encodeURIComponent(code);
     }
 
@@ -470,13 +820,13 @@
     function submitToMikrotik(code) {
       var form = document.getElementById('sendin');
       var rawAction = (form.getAttribute('action') || '').trim();
-      
+
       // Corriger l'action du form si MikroTik n'a pas injecté $(link-login-only)
       // Cela arrive sur PC/tablette qui ne passent pas par le CNA
       if (!form.action || rawAction.indexOf('$(') !== -1 || form.action.indexOf('$(') !== -1) {
         form.action = 'http://' + window.location.hostname + '/login';
       }
-      
+
       form.username.value = code;
       form.password.value = code;
       form.querySelector('[name="dst"]').value = getStatusUrl(code);
@@ -486,34 +836,70 @@
     // Appel API /activate puis soumission MikroTik
     async function activateAndConnect(code) {
       var btn = document.getElementById('btn-reconnect');
-      btn.disabled  = true;
-      btn.innerHTML = '<span class="btn-icon">&#x23F3;</span><span>Connexion en cours...</span>';
+      btn.disabled = true;
+      btn.innerHTML = '<span>Connexion en cours...</span>';
+      setLoading('Validation de votre code...');
 
       lsSet('vc_last_code', code);
       lsRemove('vc_disconnecting');
 
       try {
-        var resp = await apiFetch(VC_API_BASE + '/api/captive/sessions/activate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ code: code, mac: clientMac || undefined, ip_address: clientIp || undefined, borneId: borneId || undefined }),
-          credentials: 'omit',
-        });
-        var result = await resp.json();
-        if (!resp.ok || result.ok === false) {
-          btn.disabled  = false;
-          btn.innerHTML = '<span class="btn-icon">&#x21BA;</span>'
-            + '<span class="btn-text-wrap"><span class="btn-label">Se reconnecter</span>'
-            + '<span class="btn-sub" style="color:#dc2626;opacity:1;">' + (result.error || 'Code invalide ou expire') + '</span></span>';
-          return;
+        var bases = getApiBases();
+        var activated = false;
+        var idx;
+
+        for (idx = 0; idx < bases.length; idx++) {
+          var base = bases[idx];
+          try {
+            var resp = await apiFetch(base + '/api/captive/sessions/activate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ code: code, mac: clientMac || undefined, ip_address: clientIp || undefined, borneId: borneId || undefined }),
+              credentials: 'omit',
+            });
+            var result = await resp.json();
+            if (!resp.ok || result.ok === false) {
+              throw new Error(result.error || 'Code invalide ou expire');
+            }
+
+            setApiBase(base);
+            var sid = result.session && result.session.id;
+            if (sid) lsSet('vc_last_session_id', sid);
+
+            try {
+              lsSet('vc_last_session_payload', JSON.stringify({
+                ts: Date.now(),
+                active: true,
+                session: result.session || { code: code },
+                mikrotikLive: null
+              }));
+            } catch (e) {}
+
+            activated = true;
+            break;
+          } catch (innerErr) {
+            var m = innerErr && innerErr.message ? String(innerErr.message) : '';
+            if (/Failed to fetch|NetworkError|Load failed|fetch|API inaccessible/i.test(m)) {
+              continue;
+            }
+            clearLoading();
+            btn.disabled = false;
+            btn.innerHTML = '<span class="btn-icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15.5-6.5L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15.5 6.5L3 16"></path></svg></span>'
+              + '<span class="btn-text-wrap"><span class="btn-label">Se reconnecter</span>'
+              + '<span class="btn-sub" style="color:#dc2626;opacity:1;">' + m + '</span></span>';
+            return;
+          }
         }
-        var sid = result.session && result.session.id;
-        if (sid) lsSet('vc_last_session_id', sid);
-      } catch(e) {
+
+        if (!activated) {
+          throw new Error('API inaccessible. Verifiez VC_API_BASE, le walled-garden MikroTik et le port 3001.');
+        }
+      } catch (e) {
         // Erreur réseau non bloquante : MikroTik décidera
         console.warn('activate (non bloquant):', e.message);
       }
 
+      setLoading('Connexion au hotspot...');
       submitToMikrotik(code);
     }
 
@@ -525,17 +911,17 @@
     var savedCode = (getQuery('code') || lsGet('vc_last_code')).replace(/\s/g, '').toUpperCase();
     if (savedCode) lsSet('vc_last_code', savedCode);
 
-    var btnReconnect  = document.getElementById('btn-reconnect');
-    var btnNew        = document.getElementById('btn-new');
-    var savedBlock    = document.getElementById('saved-code-block');
-    var savedVal      = document.getElementById('saved-code-val');
+    var btnReconnect = document.getElementById('btn-reconnect');
+    var btnNew = document.getElementById('btn-new');
+    var savedBlock = document.getElementById('saved-code-block');
+    var savedVal = document.getElementById('saved-code-val');
     var hintReconnect = document.getElementById('hint-reconnect');
 
     if (savedCode) {
-      savedBlock.style.display  = 'block';
-      savedVal.textContent      = savedCode.length > 4 ? savedCode.substr(0,4) + ' ' + savedCode.substr(4) : savedCode;
-      hintReconnect.textContent = 'Code : ' + (savedCode.length > 4 ? savedCode.substr(0,4) + ' ' + savedCode.substr(4) : savedCode);
-      btnReconnect.disabled     = false;
+      savedBlock.style.display = 'block';
+      savedVal.textContent = savedCode.length > 4 ? savedCode.substr(0, 4) + ' ' + savedCode.substr(4) : savedCode;
+      hintReconnect.textContent = 'Code : ' + (savedCode.length > 4 ? savedCode.substr(0, 4) + ' ' + savedCode.substr(4) : savedCode);
+      btnReconnect.disabled = false;
     }
 
     // Bouton 1 : connexion directe sans passer par login.html
@@ -545,12 +931,14 @@
     });
 
     // Bouton 2 : nouveau code → page login vierge
-    var loginUrl = cleanValue(document.getElementById('mt-link-login').value)
-                   || ('http://' + window.location.hostname + '/login');
     btnNew.addEventListener('click', function () {
       lsRemove('vc_last_code');
-      window.location.replace(loginUrl);
+      setLoading('Ouverture de la page de connexion...');
+      setTimeout(function () {
+        window.location.href = 'http://' + window.location.hostname + '/login.html';
+      }, 50);
     });
   </script>
 </body>
+
 </html>

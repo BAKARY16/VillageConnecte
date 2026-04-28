@@ -122,6 +122,36 @@ function keyValueRowsToObject(rows = []) {
   }, {});
 }
 
+function normalizeMac(value) {
+  const cleaned = String(value || '').trim().replace(/-/g, ':').toUpperCase();
+  if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+function parseRouterOsDurationSeconds(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return 0;
+
+  if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+    const parts = value.split(':').map(Number);
+    return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  }
+
+  let total = 0;
+  const w = value.match(/(\d+)w/); if (w) total += Number(w[1]) * 7 * 86400;
+  const d = value.match(/(\d+)d/); if (d) total += Number(d[1]) * 86400;
+  const h = value.match(/(\d+)h/); if (h) total += Number(h[1]) * 3600;
+  const m = value.match(/(\d+)m/); if (m) total += Number(m[1]) * 60;
+  const s = value.match(/(\d+)s/); if (s) total += Number(s[1]);
+  return total;
+}
+
+function bytesToMb(bytesValue) {
+  const bytes = Number(bytesValue || 0);
+  if (!Number.isFinite(bytes) || bytes <= 0) return 0;
+  return Number((bytes / (1024 * 1024)).toFixed(3));
+}
+
 function averageMbpsFromSession(dataDownMb, dataUpMb, startedAt) {
   if (!startedAt) return 0;
   const startedTs = new Date(startedAt).getTime();
@@ -435,7 +465,85 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
       date: formatDateYmd(tx.created_at),
     }));
 
-    const sessions = sessionsRows.map(session => ({
+    let mergedSessionsRows = [...sessionsRows];
+
+    // Synchronisation temps réel MikroTik -> Admin bootstrap.
+    // Ajoute les sessions actives routeur absentes de la DB.
+    if (process.env.MIKROTIK_ENABLED === 'true') {
+      const activeUsers = await mikrotik.getActiveUsers();
+      if (Array.isArray(activeUsers) && activeUsers.length > 0) {
+        const byMac = new Set(
+          sessionsRows
+            .map((s) => normalizeMac(s.mac_address))
+            .filter(Boolean)
+        );
+        const byIp = new Set(
+          sessionsRows
+            .map((s) => String(s.ip_address || '').trim())
+            .filter(Boolean)
+        );
+
+        const bornesByIp = bornesRows.reduce((acc, b) => {
+          const ip = String(b.adresse_ip || '').trim();
+          if (ip) acc[ip] = { id: b.id, zone: b.zone || '-' };
+          return acc;
+        }, {});
+
+        const userCodes = [...new Set(activeUsers
+          .map((u) => String(u.user || u.name || '').trim().toUpperCase())
+          .filter(Boolean))];
+
+        let voucherMap = {};
+        if (userCodes.length > 0) {
+          const placeholders = userCodes.map(() => '?').join(',');
+          const voucherLookup = await query(
+            `SELECT UPPER(v.code) AS code, t.slug AS tarif_slug
+             FROM vouchers v
+             LEFT JOIN tarifs t ON t.id = v.tarif_id
+             WHERE UPPER(v.code) IN (${placeholders})`,
+            userCodes
+          );
+          voucherMap = voucherLookup.reduce((acc, row) => {
+            acc[row.code] = row.tarif_slug || 'journalier';
+            return acc;
+          }, {});
+        }
+
+        const mikrotikOnlyRows = [];
+        for (const u of activeUsers) {
+          const mac = normalizeMac(u['mac-address'] || u.mac || u.macAddress);
+          const ip = String(u.address || u.ip || u['ip-address'] || '').trim();
+          const code = String(u.user || u.name || '').trim().toUpperCase();
+
+          if ((mac && byMac.has(mac)) || (ip && byIp.has(ip))) continue;
+
+          const uptimeSeconds = parseRouterOsDurationSeconds(u.uptime);
+          const startedAt = uptimeSeconds > 0
+            ? new Date(Date.now() - (uptimeSeconds * 1000)).toISOString()
+            : new Date().toISOString();
+
+          const borneInfo = bornesByIp[ip] || null;
+          mikrotikOnlyRows.push({
+            id: `MT-${mac || ip || code || Math.random().toString(36).slice(2, 10)}`,
+            mac_address: mac || '',
+            ip_address: ip || '',
+            borne_id: borneInfo?.id || null,
+            borne_zone: borneInfo?.zone || 'MikroTik (temps reel)',
+            started_at: startedAt,
+            expires_at: null,
+            data_mb_down: bytesToMb(u['bytes-out'] || u.bytesOut || 0),
+            data_mb_up: bytesToMb(u['bytes-in'] || u.bytesIn || 0),
+            secondes_restantes: 0,
+            voucher_code: code || '-',
+            tarif_slug: voucherMap[code] || 'journalier',
+          });
+        }
+
+        mergedSessionsRows = [...mikrotikOnlyRows, ...mergedSessionsRows];
+      }
+    }
+
+    const sessions = mergedSessionsRows.map(session => ({
       id: session.id,
       mac: session.mac_address,
       ip: session.ip_address,
@@ -525,7 +633,7 @@ router.get('/bootstrap', requireAuth, async (req, res) => {
     }));
 
     const kpis = {
-      usersConnectes: toNum(sessionsCount?.value),
+      usersConnectes: Math.max(toNum(sessionsCount?.value), sessions.length),
       revenusJour: toNum(revenusJour?.value),
       revenusHier: toNum(revenusHier?.value),
       revenusSemaine: toNum(revenusSemaine?.value),
@@ -948,23 +1056,31 @@ router.post('/vouchers/generate', requireAuth, async (req, res) => {
     }
 
     // Synchroniser immédiatement les nouveaux vouchers vers MikroTik.
-    // Les utilisateurs hotspot sont créés MAINTENANT (pas à l'activation),
-    // garantissant que le CHAP fonctionne dès la première saisie du code.
+    // On utilise un upsert + retries pour éviter les "codes générés absents".
+    let mikrotikSync = null;
     if (process.env.MIKROTIK_ENABLED === 'true') {
-      setImmediate(async () => {
-        try {
-          await mikrotik.ensureHotspotProfile(tarif.slug, toNum(tarif.vitesse_mbps, 5));
-          for (const v of created) {
-            await mikrotik.createHotspotUser(v.code, v.tarif_slug, v.duree_heures);
-          }
-          console.log(`✅ MikroTik: ${created.length} users hotspot crees (batch generation)`);
-        } catch (err) {
-          console.warn('⚠️ MikroTik sync generation:', err.message);
+      try {
+        await mikrotik.ensureHotspotProfile(tarif.slug, toNum(tarif.vitesse_mbps, 5));
+        mikrotikSync = await mikrotik.syncVouchers(created, { upsert: true, maxAttempts: 3 });
+
+        if (mikrotikSync.errors > 0 && Array.isArray(mikrotikSync.failedCodes) && mikrotikSync.failedCodes.length > 0) {
+          // Retry asynchrone de rattrapage pour les rares erreurs réseau temporaires.
+          const retryBatch = created.filter(v => mikrotikSync.failedCodes.includes(String(v.code || '').toUpperCase()));
+          setImmediate(async () => {
+            try {
+              const retry = await mikrotik.syncVouchers(retryBatch, { upsert: true, maxAttempts: 2 });
+              console.warn(`⚠️ MikroTik rattrapage generation: ${retry.synced} sync, ${retry.errors} erreurs`);
+            } catch (retryErr) {
+              console.warn('⚠️ MikroTik rattrapage generation erreur:', retryErr.message);
+            }
+          });
         }
-      });
+      } catch (err) {
+        mikrotikSync = { success: false, error: err.message || 'Sync MikroTik impossible' };
+      }
     }
 
-    return res.status(201).json({ success: true, vouchers: created });
+    return res.status(201).json({ success: true, vouchers: created, mikrotikSync });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Generation impossible' });
   }
@@ -1003,9 +1119,11 @@ router.post('/vouchers/:id/reactivate', requireAuth, async (req, res) => {
           // 1. Déconnecter la session MikroTik active (si l'utilisateur est connecté)
           await mikrotik.disconnectUserByUsername(voucher.code);
           if (voucher.mac_utilisateur) await mikrotik.disconnectUserByMac(voucher.mac_utilisateur);
-          // 2. S'assurer que le profil et l'utilisateur existent pour la prochaine connexion
+          // 2. Supprimer puis recréer le user hotspot pour repartir comme un code neuf
+          await mikrotik.deleteHotspotUser(voucher.code);
+          // 3. S'assurer que le profil et l'utilisateur existent pour la prochaine connexion
           await mikrotik.ensureHotspotProfile(voucher.tarif_slug, toNum(voucher.vitesse_mbps, 5));
-          await mikrotik.createHotspotUser(voucher.code, voucher.tarif_slug, 0); // 0 = pas de limit-uptime (géré par expires_at DB)
+          await mikrotik.createHotspotUser(voucher.code, voucher.tarif_slug, toNum(voucher.duree_heures, 24), { upsert: true });
           console.log(`✅ MikroTik: Voucher réactivé: ${voucher.code}`);
         } catch (err) {
           console.warn(`⚠️ MikroTik réactivation ${voucher.code}:`, err.message);

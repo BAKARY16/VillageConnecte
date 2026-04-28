@@ -8,6 +8,37 @@ const { query, queryOne } = require('../config/database');
 const { requireAuth }      = require('../middleware/auth');
 const { validate, schemas } = require('../middleware/validate');
 const { generateTransactionRef } = require('../utils/voucher');
+const mikrotik = require('../services/mikrotik');
+
+function normalizeMac(value) {
+  const cleaned = String(value || '').trim().replace(/-/g, ':').toUpperCase();
+  if (!/^([0-9A-F]{2}:){5}[0-9A-F]{2}$/.test(cleaned)) return null;
+  return cleaned;
+}
+
+function parseRouterOsDurationSeconds(raw) {
+  const value = String(raw || '').trim();
+  if (!value) return 0;
+
+  if (/^\d{2}:\d{2}:\d{2}$/.test(value)) {
+    const parts = value.split(':').map(Number);
+    return (parts[0] * 3600) + (parts[1] * 60) + parts[2];
+  }
+
+  let total = 0;
+  const w = value.match(/(\d+)w/); if (w) total += Number(w[1]) * 7 * 86400;
+  const d = value.match(/(\d+)d/); if (d) total += Number(d[1]) * 86400;
+  const h = value.match(/(\d+)h/); if (h) total += Number(h[1]) * 3600;
+  const m = value.match(/(\d+)m/); if (m) total += Number(m[1]) * 60;
+  const s = value.match(/(\d+)s/); if (s) total += Number(s[1]);
+  return total;
+}
+
+function bytesToMb(bytesValue) {
+  const bytes = Number(bytesValue || 0);
+  if (!Number.isFinite(bytes) || bytes <= 0) return 0;
+  return Number((bytes / (1024 * 1024)).toFixed(3));
+}
 
 /* ══════════════════════════════════════════════════════
    DASHBOARD
@@ -307,7 +338,80 @@ const sessionsRouter = express.Router();
 sessionsRouter.get('/', requireAuth, async (req, res) => {
   try {
     const sessions = await query('SELECT * FROM v_sessions_actives ORDER BY started_at DESC');
-    return res.json({ success: true, data: sessions });
+
+    // Fusion DB + MikroTik: inclure les sessions actives visibles sur le routeur
+    // même si la DB n'est pas encore totalement synchronisée.
+    let mergedSessions = [...sessions];
+    if (process.env.MIKROTIK_ENABLED === 'true') {
+      const activeUsers = await mikrotik.getActiveUsers();
+      if (Array.isArray(activeUsers) && activeUsers.length > 0) {
+        const macSet = new Set(
+          sessions
+            .map((s) => normalizeMac(s.mac_address || s.mac))
+            .filter(Boolean)
+        );
+        const ipSet = new Set(
+          sessions
+            .map((s) => String(s.ip_address || s.ip || '').trim())
+            .filter(Boolean)
+        );
+
+        const userCodes = [...new Set(activeUsers
+          .map((u) => String(u.user || u.name || '').trim().toUpperCase())
+          .filter(Boolean))];
+
+        let voucherMap = {};
+        if (userCodes.length > 0) {
+          const placeholders = userCodes.map(() => '?').join(',');
+          const voucherRows = await query(
+            `SELECT UPPER(v.code) AS code, t.slug AS tarif_slug
+             FROM vouchers v
+             LEFT JOIN tarifs t ON t.id = v.tarif_id
+             WHERE UPPER(v.code) IN (${placeholders})`,
+            userCodes
+          );
+          voucherMap = voucherRows.reduce((acc, row) => {
+            acc[row.code] = row.tarif_slug || 'journalier';
+            return acc;
+          }, {});
+        }
+
+        const mikrotikOnly = [];
+        for (const u of activeUsers) {
+          const mac = normalizeMac(u['mac-address'] || u.mac || u.macAddress);
+          const ip = String(u.address || u.ip || u['ip-address'] || '').trim();
+          const code = String(u.user || u.name || '').trim().toUpperCase();
+
+          if ((mac && macSet.has(mac)) || (ip && ipSet.has(ip))) {
+            continue;
+          }
+
+          const uptimeSeconds = parseRouterOsDurationSeconds(u.uptime);
+          const startedAt = uptimeSeconds > 0
+            ? new Date(Date.now() - (uptimeSeconds * 1000)).toISOString()
+            : new Date().toISOString();
+
+          mikrotikOnly.push({
+            id: `MT-${mac || ip || code || Math.random().toString(36).slice(2, 10)}`,
+            mac_address: mac || '',
+            ip_address: ip || '',
+            borne_id: null,
+            borne_zone: 'MikroTik (temps reel)',
+            started_at: startedAt,
+            expires_at: null,
+            data_mb_down: bytesToMb(u['bytes-out'] || u.bytesOut || 0),
+            data_mb_up: bytesToMb(u['bytes-in'] || u.bytesIn || 0),
+            secondes_restantes: 0,
+            voucher_code: code || '-',
+            tarif_slug: voucherMap[code] || 'journalier',
+          });
+        }
+
+        mergedSessions = [...mikrotikOnly, ...mergedSessions];
+      }
+    }
+
+    return res.json({ success: true, data: mergedSessions });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }

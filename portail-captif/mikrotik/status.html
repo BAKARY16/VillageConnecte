@@ -49,7 +49,7 @@
     .root:before {
       content: "";
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: url("backgrounds.jpg") no-repeat center center / cover;
       filter: blur(4px);
       opacity: 0.9;
@@ -59,7 +59,7 @@
     .root:after {
       content: "";
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background: linear-gradient(180deg, rgba(244, 246, 250, 0.18), rgba(244, 246, 250, 0.85));
       z-index: 0;
     }
@@ -282,7 +282,7 @@
     .dialog-overlay {
       display: none;
       position: fixed;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       z-index: 200;
       background: rgba(0, 0, 0, 0.52);
       align-items: center;
@@ -310,6 +310,16 @@
     }
 
     .dialog-icon { font-size: 2rem; margin-bottom: 10px; }
+
+    .dialog-icon svg {
+      width: 36px;
+      height: 36px;
+      stroke: #b45309;
+      fill: none;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
 
     .dialog-title {
       margin: 0 0 6px;
@@ -343,6 +353,86 @@
     }
 
     .btn-outline:hover { background: var(--bg-soft); }
+
+    .vc-loading-overlay {
+      position: fixed;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: rgba(22, 16, 26, 0.42);
+      backdrop-filter: blur(2px);
+      -webkit-backdrop-filter: blur(2px);
+      z-index: 260;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .vc-loading-overlay.is-visible {
+      display: flex;
+    }
+
+    .vc-loading-card {
+      width: 100%; max-width: 320px;
+      background: #ffffff;
+      border-radius: 16px;
+      box-shadow: 0 16px 44px rgba(15, 10, 18, 0.24);
+      border: 1px solid rgba(85, 16, 77, 0.1);
+      padding: 18px 18px 16px;
+      text-align: center;
+      color: var(--brand-primary);
+      font-size: 0.84rem;
+      font-weight: 600;
+    }
+
+    .vc-spinner {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 12px;
+      position: relative;
+      color: var(--brand-primary);
+      animation: vc-spin 1.1s linear infinite;
+    }
+
+    .vc-spinner i {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 4px;
+      height: 14px;
+      margin-left: -2px;
+      margin-top: -22px;
+      border-radius: 999px;
+      background: currentColor;
+      opacity: 0.16;
+      transform-origin: center 22px;
+    }
+
+    .vc-spinner i:nth-child(1) { transform: rotate(0deg); opacity: 1; }
+    .vc-spinner i:nth-child(2) { transform: rotate(30deg); opacity: 0.92; }
+    .vc-spinner i:nth-child(3) { transform: rotate(60deg); opacity: 0.84; }
+    .vc-spinner i:nth-child(4) { transform: rotate(90deg); opacity: 0.76; }
+    .vc-spinner i:nth-child(5) { transform: rotate(120deg); opacity: 0.68; }
+    .vc-spinner i:nth-child(6) { transform: rotate(150deg); opacity: 0.6; }
+    .vc-spinner i:nth-child(7) { transform: rotate(180deg); opacity: 0.52; }
+    .vc-spinner i:nth-child(8) { transform: rotate(210deg); opacity: 0.44; }
+    .vc-spinner i:nth-child(9) { transform: rotate(240deg); opacity: 0.36; }
+    .vc-spinner i:nth-child(10) { transform: rotate(270deg); opacity: 0.3; }
+    .vc-spinner i:nth-child(11) { transform: rotate(300deg); opacity: 0.24; }
+    .vc-spinner i:nth-child(12) { transform: rotate(330deg); opacity: 0.2; }
+
+    @keyframes vc-spin { to { transform: rotate(360deg); } }
+
+    /* === Compat anciens navigateurs (Chrome < 79, Android 6) === */
+    @supports not (width: min(1px, 1px)) {
+      .header { padding: 10px 12px; }
+      .brand img { width: 36px; height: 28px; }
+      .brand-title { font-size: 12px; }
+      .main { padding: 14px 10px 24px; }
+      .hero { padding: 18px 14px; }
+      .hero h1 { font-size: 1.05rem; }
+      .timer { font-size: 1.6rem; }
+      .btn { padding: 11px 14px; font-size: 0.82rem; }
+    }
   </style>
 </head>
 <body>
@@ -390,7 +480,9 @@
     <!-- Dialog de confirmation déconnexion -->
     <div class="dialog-overlay" id="disconnect-dialog" role="dialog" aria-modal="true">
       <div class="dialog-box">
-        <div class="dialog-icon">⚠️</div>
+        <div class="dialog-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3l-8.47-14.14a2 2 0 0 0-3.42 0z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+        </div>
         <p class="dialog-title">Confirmer la deconnexion</p>
         <p class="dialog-msg">Votre session sera terminee. Vous serez redirige vers la page de connexion pour saisir votre code a nouveau.</p>
         <div class="dialog-actions">
@@ -399,13 +491,71 @@
         </div>
       </div>
     </div>
+
+    <div class="vc-loading-overlay" id="vc-loading" aria-hidden="true">
+      <div class="vc-loading-card">
+        <div class="vc-spinner" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <div id="vc-loading-text">Chargement de votre session...</div>
+      </div>
+    </div>
   </div>
 
   <script>
-    window.VC_API_BASE = (function () {
-      var base = 'http://192.168.1.128:3001';
-      if (window.location.protocol === 'https:') return base.replace('http:', 'https:');
-      return base;
+    (function () {
+      function normalizeApiBase(value) {
+        var text = String(value || '').trim().replace(/\/+$/, '');
+        if (!text) return '';
+        if (/\/api$/i.test(text)) {
+          text = text.replace(/\/api$/i, '');
+        }
+        return text;
+      }
+
+      var fromQuery = '';
+      try {
+        var qs = new URLSearchParams(window.location.search);
+        fromQuery = normalizeApiBase(qs.get('api_base') || qs.get('api') || '');
+      } catch (e) {}
+
+      var fromStorage = '';
+      try {
+        fromStorage = normalizeApiBase(localStorage.getItem('vc_api_base') || '');
+      } catch (e) {}
+
+      var fromHost = '';
+      try {
+        var host = String(window.location.hostname || '').trim();
+        if (host) fromHost = normalizeApiBase('http://' + host + ':3001');
+      } catch (e) {}
+
+      var rawCandidates = [
+        fromQuery,
+        fromStorage,
+        'https://villageconnecte.voisilab.online',
+        fromHost,
+        'http://10.5.50.252:3001',
+        'http://10.5.50.253:3001'
+      ];
+
+      var seen = {};
+      var candidates = [];
+      var i;
+      for (i = 0; i < rawCandidates.length; i++) {
+        var c = normalizeApiBase(rawCandidates[i]);
+        if (!c || seen[c]) continue;
+        seen[c] = true;
+        candidates.push(c);
+      }
+
+      var base = candidates[0] || 'http://10.5.50.252:3001';
+      window.VC_API_BASE = base;
+      window.VC_API_BASES = candidates.length ? candidates : [base];
+
+      if (fromQuery) {
+        try { localStorage.setItem('vc_api_base', base); } catch (e) {}
+      }
     })();
   </script>
 
@@ -422,7 +572,29 @@
 
   <script>
     (function () {
-      var apiBase = window.VC_API_BASE || 'http://192.168.1.128:3001';
+      function getApiBase() {
+        return window.VC_API_BASE || 'http://10.5.50.252:3001';
+      }
+
+      function getApiBases() {
+        var list = Array.isArray(window.VC_API_BASES) ? window.VC_API_BASES.slice() : [];
+        if (!list.length) list = [getApiBase()];
+        var primary = getApiBase();
+        if (list[0] !== primary) {
+          list = [primary].concat(list.filter(function (item) { return item !== primary; }));
+        }
+        return list;
+      }
+
+      function setApiBase(base) {
+        var normalized = String(base || '').trim().replace(/\/+$/, '').replace(/\/api$/i, '');
+        if (!normalized) return;
+        window.VC_API_BASE = normalized;
+        var current = Array.isArray(window.VC_API_BASES) ? window.VC_API_BASES : [];
+        window.VC_API_BASES = [normalized].concat(current.filter(function (item) { return item !== normalized; }));
+        lsSet('vc_api_base', normalized);
+      }
+
       var heroCard = document.getElementById('hero-card');
       var sessionCard = document.getElementById('session-card');
       var offlineCard = document.getElementById('offline-card');
@@ -440,6 +612,22 @@
       var clientMacEl = document.getElementById('client-mac');
       var disconnectBtn = document.getElementById('disconnect-btn');
       var btnRetourLogin = document.getElementById('btn-retour-login');
+      var loadingOverlay = document.getElementById('vc-loading');
+      var loadingText = document.getElementById('vc-loading-text');
+
+      function setLoading(message) {
+        if (loadingText) loadingText.textContent = message || 'Chargement en cours...';
+        if (loadingOverlay) {
+          loadingOverlay.classList.add('is-visible');
+          loadingOverlay.setAttribute('aria-hidden', 'false');
+        }
+      }
+
+      function clearLoading() {
+        if (!loadingOverlay) return;
+        loadingOverlay.classList.remove('is-visible');
+        loadingOverlay.setAttribute('aria-hidden', 'true');
+      }
 
       function getQuery(name) {
         return new URLSearchParams(window.location.search).get(name) || '';
@@ -458,6 +646,13 @@
       function lsSet(key, value) {
         try { localStorage.setItem(key, value); } catch(e) {}
       }
+
+      function lsRemove(key) {
+        try { localStorage.removeItem(key); } catch(e) {}
+      }
+
+      var SESSION_CACHE_KEY = 'vc_last_session_payload';
+      var SESSION_CACHE_MAX_AGE_MS = 120000;
 
       // ── Lire les variables MikroTik injectées ────────────────────
       var mtUsername = cleanValue(document.getElementById('mt-username').value);
@@ -549,6 +744,125 @@
       var _secsRemaining = 0;
       var _totalSecs = 0;
       var _countdownTimer = null;
+      var _dynamicTimer = null;
+      var _pollTimer = null;
+      var _visibilityHooked = false;
+      var POLL_INTERVAL_MS = 3000;
+
+      var _dynamicState = {
+        hasData: false,
+        uptimeSec: null,
+        downMb: 0,
+        upMb: 0,
+        downMbps: 0,
+        upMbps: 0,
+        lastBytesIn: null,
+        lastBytesOut: null,
+        lastBytesTs: 0
+      };
+
+      function toFinite(value, fallback) {
+        var n = Number(value);
+        return Number.isFinite(n) ? n : fallback;
+      }
+
+      function stopDynamicTicker() {
+        if (_dynamicTimer) {
+          clearInterval(_dynamicTimer);
+          _dynamicTimer = null;
+        }
+      }
+
+      function ensureDynamicTicker() {
+        if (_dynamicTimer) return;
+        _dynamicTimer = setInterval(function () {
+          if (!_dynamicState.hasData) return;
+
+          if (Number.isFinite(_dynamicState.uptimeSec) && _dynamicState.uptimeSec >= 0) {
+            _dynamicState.uptimeSec += 1;
+          }
+
+          // Mbps -> MB/s (division par 8)
+          if (_dynamicState.downMbps > 0) {
+            _dynamicState.downMb += (_dynamicState.downMbps / 8);
+          }
+          if (_dynamicState.upMbps > 0) {
+            _dynamicState.upMb += (_dynamicState.upMbps / 8);
+          }
+
+          if (Number.isFinite(_dynamicState.uptimeSec) && _dynamicState.uptimeSec >= 0) {
+            uptimeEl.innerHTML = formatUptime(_dynamicState.uptimeSec);
+          }
+          downloadEl.innerHTML = formatBytes(_dynamicState.downMb);
+          uploadEl.innerHTML = formatBytes(_dynamicState.upMb);
+        }, 1000);
+      }
+
+      function deriveRatesFromMikrotikBytes(live) {
+        if (!live) return null;
+
+        var now = Date.now();
+        var bytesIn = toFinite(live.bytesIn, NaN);
+        var bytesOut = toFinite(live.bytesOut, NaN);
+
+        if (!Number.isFinite(bytesIn) || !Number.isFinite(bytesOut)) {
+          return null;
+        }
+
+        var rates = null;
+        if (Number.isFinite(_dynamicState.lastBytesIn) && Number.isFinite(_dynamicState.lastBytesOut) && _dynamicState.lastBytesTs > 0) {
+          var dtSec = (now - _dynamicState.lastBytesTs) / 1000;
+          if (dtSec > 0.3) {
+            var downMbps = ((bytesIn - _dynamicState.lastBytesIn) * 8) / (dtSec * 1000000);
+            var upMbps = ((bytesOut - _dynamicState.lastBytesOut) * 8) / (dtSec * 1000000);
+            rates = {
+              downMbps: Math.max(0, toFinite(downMbps, 0)),
+              upMbps: Math.max(0, toFinite(upMbps, 0))
+            };
+          }
+        }
+
+        _dynamicState.lastBytesIn = bytesIn;
+        _dynamicState.lastBytesOut = bytesOut;
+        _dynamicState.lastBytesTs = now;
+
+        return rates;
+      }
+
+      function updateDynamicState(session, live, downMb, upMb) {
+        var uptimeSec = null;
+        if (live && toFinite(live.uptimeSeconds, 0) > 0) {
+          uptimeSec = toFinite(live.uptimeSeconds, null);
+        } else if (session && session.heureDebut) {
+          uptimeSec = Math.max(0, Math.floor((Date.now() - new Date(session.heureDebut).getTime()) / 1000));
+        }
+
+        _dynamicState.uptimeSec = Number.isFinite(uptimeSec) ? uptimeSec : _dynamicState.uptimeSec;
+        _dynamicState.downMb = Math.max(0, toFinite(downMb, _dynamicState.downMb || 0));
+        _dynamicState.upMb = Math.max(0, toFinite(upMb, _dynamicState.upMb || 0));
+
+        var apiDownMbps = session ? Math.max(0, toFinite(session.debitDownMbps, 0)) : 0;
+        var apiUpMbps = session ? Math.max(0, toFinite(session.debitUpMbps, 0)) : 0;
+
+        var liveRates = deriveRatesFromMikrotikBytes(live);
+        if (liveRates && (liveRates.downMbps > 0 || liveRates.upMbps > 0)) {
+          _dynamicState.downMbps = liveRates.downMbps;
+          _dynamicState.upMbps = liveRates.upMbps;
+        } else {
+          _dynamicState.downMbps = apiDownMbps;
+          _dynamicState.upMbps = apiUpMbps;
+        }
+
+        _dynamicState.hasData = true;
+
+        if (Number.isFinite(_dynamicState.uptimeSec) && _dynamicState.uptimeSec >= 0) {
+          uptimeEl.innerHTML = formatUptime(_dynamicState.uptimeSec);
+        }
+        downloadEl.innerHTML = formatBytes(_dynamicState.downMb);
+        uploadEl.innerHTML = formatBytes(_dynamicState.upMb);
+
+        ensureDynamicTicker();
+      }
 
       function startCountdown(secsRemaining, totalSecs) {
         _secsRemaining = Math.max(0, secsRemaining);
@@ -580,31 +894,66 @@
 
       // Wrapper fetch : bascule HTTP <-> HTTPS si erreur reseau (sans memoriser)
       async function apiFetch(url, options) {
+        options = options || {};
+        var mergedHeaders = Object.assign({}, options.headers || {}, {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0'
+        });
+        var fetchOptions = Object.assign({}, options, {
+          cache: 'no-store',
+          headers: mergedHeaders
+        });
+
         try {
-          return await fetch(url, options);
+          return await fetch(url, fetchOptions);
         } catch(networkErr) {
           // Protocole alternatif — on essaie sans changer l'état global
           var isHttps = url.startsWith('https:');
           var altUrl  = isHttps ? url.replace('https:', 'http:') : url.replace('http:', 'https:');
-          return fetch(altUrl, options);
+          return fetch(altUrl, fetchOptions);
         }
       }
 
       async function apiJson(path, method, body) {
-        var response = await apiFetch(apiBase + path, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: body ? JSON.stringify(body) : undefined,
-          credentials: 'omit',
-        });
-        var payload = await response.json().catch(function () { return {}; });
-        if (!response.ok || payload.ok === false || payload.success === false) {
-          throw new Error(payload.error || payload.message || 'Requete impossible');
+        var resolvedPath = path;
+        if (String(method || 'GET').toUpperCase() === 'GET') {
+          var sep = resolvedPath.indexOf('?') >= 0 ? '&' : '?';
+          resolvedPath += sep + '_ts=' + Date.now();
         }
-        return payload;
+
+        var bases = getApiBases();
+        var i;
+        for (i = 0; i < bases.length; i++) {
+          var base = bases[i];
+          try {
+            var response = await apiFetch(base + resolvedPath, {
+              method: method,
+              headers: { 'Content-Type': 'application/json' },
+              body: body ? JSON.stringify(body) : undefined,
+              credentials: 'omit',
+            });
+            var payload = await response.json().catch(function () { return {}; });
+            if (!response.ok || payload.ok === false || payload.success === false) {
+              throw new Error(payload.error || payload.message || 'Requete impossible');
+            }
+            setApiBase(base);
+            return payload;
+          } catch (error) {
+            var msg = error && error.message ? String(error.message) : '';
+            if (/Failed to fetch|NetworkError|Load failed|fetch|API inaccessible/i.test(msg)) {
+              continue;
+            }
+            throw error;
+          }
+        }
+
+        throw new Error('API inaccessible. Verifiez VC_API_BASE, le walled-garden MikroTik et le port 3001.');
       }
 
       function showOffline(message) {
+        clearLoading();
+        stopDynamicTicker();
         heroTitle.innerHTML = 'Session indisponible';
         sessionCodeEl.innerHTML = '--';
         timeLeftEl.innerHTML = '--:--:--';
@@ -616,6 +965,58 @@
         offlineCard.style.display = 'block';
       }
 
+      function readSessionCache() {
+        try {
+          var raw = lsGet(SESSION_CACHE_KEY);
+          if (!raw) return null;
+          var parsed = JSON.parse(raw);
+          if (!parsed || typeof parsed !== 'object') return null;
+          if (!parsed.ts || (Date.now() - Number(parsed.ts)) > SESSION_CACHE_MAX_AGE_MS) return null;
+          return parsed;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function writeSessionCache(payload) {
+        try {
+          var session = payload && (payload.session || payload);
+          if (!session) return;
+
+          lsSet(SESSION_CACHE_KEY, JSON.stringify({
+            ts: Date.now(),
+            active: payload.active !== false,
+            session: {
+              id: session.id || '',
+              code: session.code || sessionCode || '',
+              duree: Number(session.duree || 0),
+              secondesRestantes: Number(session.secondesRestantes || 0),
+              dataDownMb: Number(session.dataDownMb || 0),
+              dataUpMb: Number(session.dataUpMb || 0),
+              ip: session.ip || mtIp || '',
+              mac: session.mac || mtMac || '',
+              heureDebut: session.heureDebut || ''
+            },
+            mikrotikLive: payload.mikrotikLive || null
+          }));
+        } catch (e) {}
+      }
+
+      function applyWarmSessionCache() {
+        var cached = readSessionCache();
+        if (!cached || !cached.session) return false;
+
+        var cachedCode = String(cached.session.code || '').trim();
+        if (sessionCode && cachedCode && cachedCode !== sessionCode) return false;
+
+        renderSession(cached);
+        if (cachedCode && !sessionCode) {
+          sessionCode = cachedCode;
+          lsSet('vc_last_code', cachedCode);
+        }
+        return true;
+      }
+
       // Afficher immédiatement les données MikroTik locales si disponibles (avant la réponse API)
       function renderMikrotikLocal() {
         if (!sessionCode) return;
@@ -624,6 +1025,15 @@
         heroTitle.innerHTML = 'Connexion en cours de verification...';
         sessionCard.style.display = 'block';
         offlineCard.style.display = 'none';
+
+        var warmUptimeSec = mtUptime ? parseUptime(mtUptime) : null;
+        var warmBytesIn = parseInt(mtBytesIn, 10) || 0;
+        var warmBytesOut = parseInt(mtBytesOut, 10) || 0;
+        var warmLive = {
+          uptimeSeconds: warmUptimeSec,
+          bytesIn: warmBytesIn,
+          bytesOut: warmBytesOut
+        };
 
         if (mtUptime) uptimeEl.innerHTML = formatUptime(parseUptime(mtUptime));
         if (mtTimeLeft) {
@@ -635,18 +1045,29 @@
           }
         }
         if (mtBytesIn || mtBytesOut) {
-          var dlMb = (parseInt(mtBytesIn, 10) || 0) / (1024 * 1024);
-          var ulMb = (parseInt(mtBytesOut, 10) || 0) / (1024 * 1024);
+          var dlMb = warmBytesIn / (1024 * 1024);
+          var ulMb = warmBytesOut / (1024 * 1024);
           downloadEl.innerHTML = formatBytes(dlMb);
           uploadEl.innerHTML = formatBytes(ulMb);
+          updateDynamicState({ heureDebut: null, debitDownMbps: 0, debitUpMbps: 0 }, warmLive, dlMb, ulMb);
+        } else {
+          updateDynamicState({ heureDebut: null, debitDownMbps: 0, debitUpMbps: 0 }, warmLive, 0, 0);
         }
         if (mtIp) clientIpEl.innerHTML = mtIp;
         if (mtMac) clientMacEl.innerHTML = mtMac;
       }
 
       function renderSession(payload) {
+        clearLoading();
         var session = payload.session || payload;
         var live = payload.mikrotikLive || null;
+
+        writeSessionCache(payload);
+
+        if (session && session.id) {
+          sessionId = String(session.id);
+          lsSet('vc_last_session_id', sessionId);
+        }
 
         var secsLeft = (live && live.sessionTimeLeftSeconds != null)
           ? live.sessionTimeLeftSeconds
@@ -677,6 +1098,7 @@
         if (ulMb === 0 && mtBytesOut) ulMb = (parseInt(mtBytesOut, 10) || 0) / (1024 * 1024);
         downloadEl.innerHTML = formatBytes(dlMb);
         uploadEl.innerHTML = formatBytes(ulMb);
+        updateDynamicState(session, live, dlMb, ulMb);
 
         var ip = (live && live.address) || session.ip || mtIp || getQuery('ip') || '--';
         var mac = (live && live.mac) || session.mac || mtMac || getQuery('mac') || '--';
@@ -692,6 +1114,7 @@
           startCountdown(secsLeft, totalSecs);
         } else if (payload.active === false) {
           if (_countdownTimer) clearInterval(_countdownTimer);
+          stopDynamicTicker();
           renderTimer(0, totalSecs);
         } else {
           if (_countdownTimer) clearInterval(_countdownTimer);
@@ -740,21 +1163,50 @@
           }
         }
 
+        lsRemove(SESSION_CACHE_KEY);
         throw new Error('Aucune session active. Saisissez votre code sur la page de connexion.');
       }
 
       function refreshFromApi() {
-        if (!sessionId) return;
-        apiJson('/api/captive/sessions/' + encodeURIComponent(sessionId) + '/status', 'GET')
+        var request = null;
+
+        if (sessionId) {
+          request = apiJson('/api/captive/sessions/' + encodeURIComponent(sessionId) + '/status', 'GET');
+        } else if (sessionCode) {
+          request = apiJson('/api/captive/sessions/by-code/' + encodeURIComponent(sessionCode), 'GET');
+        } else {
+          return;
+        }
+
+        request
           .then(function (payload) {
+            if (payload && payload.session && payload.session.id && !sessionId) {
+              sessionId = String(payload.session.id);
+              lsSet('vc_last_session_id', sessionId);
+            }
             renderSession(payload);
             if (payload.active === false) {
               lsSet('vc_last_session_id', '');
+              sessionId = '';
             }
           })
           .catch(function (error) {
             console.warn('poll error:', error.message);
           });
+      }
+
+      function ensureRealtimeSync() {
+        if (_pollTimer) clearInterval(_pollTimer);
+        _pollTimer = setInterval(refreshFromApi, POLL_INTERVAL_MS);
+
+        if (!_visibilityHooked) {
+          document.addEventListener('visibilitychange', function () {
+            if (!document.hidden) {
+              refreshFromApi();
+            }
+          });
+          _visibilityHooked = true;
+        }
       }
 
       var disconnectDialog = document.getElementById('disconnect-dialog');
@@ -780,6 +1232,7 @@
       dialogConfirm.onclick = async function () {
         dialogConfirm.disabled = true;
         dialogConfirm.innerHTML = 'Deconnexion...';
+        setLoading('Deconnexion en cours...');
 
         // 1. Vider la session locale (le code est conservé pour logout.html)
         lsSet('vc_last_session_id', '');
@@ -815,8 +1268,7 @@
         //    Fallback HTTP absolu : si $(link-logout) n'est pas injecté (PC/tablette
         //    sans CNA), construire l'URL en HTTP absolu pour forcer le passage par
         //    logout.html (URL relative ou HTTPS bloqueraient la redirection).
-        var logoutUrl = mtLinkLogout
-          || ('http://' + window.location.hostname + '/logout.html');
+        var logoutUrl = 'http://' + window.location.hostname + '/logout.html';
         window.location.href = logoutUrl;
       };
 
@@ -824,6 +1276,8 @@
       if (sessionCode || mtUsername) {
         renderMikrotikLocal();
       }
+
+      var hasWarmCache = applyWarmSessionCache();
 
       // ── Stratégie d'affichage ──────────────────────────────────
       // CAS 1 : MikroTik a injecté $(username) → session confirmée côté hotspot.
@@ -833,6 +1287,7 @@
       //   → dépend de l'API avec retry.
 
       if (mtUsername) {
+        clearLoading();
         // CAS 1 — MikroTik dit : session active
         heroTitle.innerHTML = 'Connect\u00e9 \u00e0 Internet \u2713';
         statusBadge.innerHTML = 'Connect\u00e9';
@@ -845,7 +1300,7 @@
           var tl = parseUptime(mtTimeLeft);
           if (tl > 0) startCountdown(tl, tl);
         }
-        // Enrichir depuis l'API après 2s (firewall a le temps de s'ouvrir)
+        // Enrichir depuis l'API en arrière-plan, sans bloquer l'affichage.
         setTimeout(async function () {
           try {
             var payload = await resolveSession();
@@ -853,27 +1308,30 @@
           } catch (err) {
             console.warn('API enrichissement (non bloquant):', err.message);
           }
-          setInterval(refreshFromApi, 15000);
-          document.addEventListener('visibilitychange', function () {
-            if (!document.hidden) { refreshFromApi(); }
-          });
-        }, 2000);
+          ensureRealtimeSync();
+          refreshFromApi();
+        }, 350);
 
       } else {
+        if (!hasWarmCache) {
+          setLoading('Recherche de session active...');
+        } else {
+          clearLoading();
+        }
         // CAS 2 — Pas de variables MikroTik injectées (PC, tablette, mini-webview sans CNA)
         // Si le code vient de l'URL ?code= → connexion fraîche : attendre que MikroTik
         // valide la session côté hotspot (prend 1-3s) avant le premier appel API.
         (async function () {
-          var MAX_TRIES = 6;
-          var DELAY_MS  = 2000;
+          var MAX_TRIES = 5;
+          var DELAY_MS  = 1200;
           var freshConnect = !!getQuery('code'); // vient de login.html ou reconnect.html
           var lastErr   = null;
 
           for (var attempt = 0; attempt < MAX_TRIES; attempt++) {
             var waitMs;
             if (attempt === 0) {
-              // Connexion fraîche : délai initial plus long pour laisser MikroTik s'initialiser
-              waitMs = freshConnect ? 3000 : 500;
+              // Connexion fraîche : court délai initial pour laisser MikroTik publier la session.
+              waitMs = freshConnect ? 1200 : 180;
             } else {
               waitMs = DELAY_MS;
             }
@@ -882,10 +1340,8 @@
             try {
               var payload = await resolveSession();
               renderSession(payload);
-              setInterval(refreshFromApi, 15000);
-              document.addEventListener('visibilitychange', function () {
-                if (!document.hidden) { refreshFromApi(); }
-              });
+              ensureRealtimeSync();
+              refreshFromApi();
               return;
             } catch (err) {
               lastErr = err;

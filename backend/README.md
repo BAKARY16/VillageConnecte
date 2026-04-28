@@ -21,6 +21,37 @@ L'API sera disponible sur **http://localhost:3001**
 
 ---
 
+## 🌍 Déploiement production (voisilab.online)
+
+Objectif:
+- API: https://villageconnecte.voisilab.online/api
+- Admin: https://villageconnecte.voisilab.online/admin/
+- Portail captif: heberge sur MikroTik (fichiers hotspot locaux), pas sur le domaine public
+
+Étapes minimales:
+
+```bash
+# 1) Préparer la conf prod
+cp .env.production.example .env
+
+# 2) Adapter les secrets (DB, JWT, FedaPay, MikroTik)
+
+# 3) Démarrer / redémarrer
+docker compose up -d --build
+
+# 4) Vérifier
+curl https://villageconnecte.voisilab.online/health
+curl https://villageconnecte.voisilab.online/api/public/tarifs
+```
+
+Points critiques:
+- `CORS_ORIGINS=https://villageconnecte.voisilab.online`
+- `BACKEND_PUBLIC_BASE_URL=https://villageconnecte.voisilab.online`
+- `MIKROTIK_ENABLED=true`
+- Ne jamais exposer l'API RouterOS (8728/8729) sur Internet
+
+---
+
 ## 🐳 Prérequis
 
 | Outil | Version minimale | Vérifier |
