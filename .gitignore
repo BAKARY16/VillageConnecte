@@ -20,3 +20,7 @@ Thumbs.db
 
 # Build cache
 **/.cache/
+
+# Frontend build outputs (regenerated at deploy time)
+admin/build/
+portail-captif/build/
