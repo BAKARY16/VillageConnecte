@@ -80,24 +80,9 @@ services:
     command: >
       sh -c "node src/server.js"
 
-  # ── phpMyAdmin (interface DB) ──────────────────────
-  phpmyadmin:
-    image: phpmyadmin:latest
-    container_name: vc_phpmyadmin
-    restart: unless-stopped
-    environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      PMA_USER: root
-      PMA_PASSWORD: ${DB_ROOT_PASSWORD:-root_secure_pass_2026}
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_secure_pass_2026}
-    ports:
-      - "8080:80"
-    depends_on:
-      mysql:
-        condition: service_healthy
-    networks:
-      - vc_network
+  # ── phpMyAdmin retire en prod (port 8080 deja occupe sur le serveur) ──
+  # Pour administrer la DB : tunnel SSH + client MySQL local, ou
+  #   docker compose exec mysql mysql -uroot -p
 
 volumes:
   mysql_data:
